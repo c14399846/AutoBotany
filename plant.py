@@ -5,13 +5,15 @@ from matplotlib import pyplot as plt
 from matplotlib import image as image
 import easygui
 
-width = 864
-#width = 1812
-#height = 1007
-height = 1152
+#width = 864
+width = 1800
+height = 1000
+#height = 1152
 
+plant = cv2.imread("plant2Copy.png")
 #plant = cv2.imread("plantqr.jpg")
-plant = cv2.imread("newplant1.jpg")
+#plant = cv2.imread("plant2.png")
+#plant = cv2.imread("newplant1.jpg")
 plant = cv2.resize(plant,(width, height), interpolation = cv2.INTER_CUBIC)
 
 
@@ -23,12 +25,12 @@ h, w, d = plant.shape
 
 thresh = cv2.adaptiveThreshold(grayI,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,15,5)
 
-shi = cv2.goodFeaturesToTrack(thresh, maxCorners = 50, qualityLevel = 0.7, minDistance = 10)
-
+shi = cv2.goodFeaturesToTrack(thresh, maxCorners = 20, qualityLevel = 0.7, minDistance = 10)
+'''
 corners = np.int0(shi)
 
 # Shi tomasi dots
-'''
+
 for i in corners:
     x,y = i.ravel()
     cv2.circle(plant,(x,y),5,255,-1)
@@ -36,7 +38,7 @@ for i in corners:
 
 plt.imshow(plant),plt.show()
 '''
-cv2.imshow("tg", thresh)
+#cv2.imshow("tg", thresh)
 
 #use this for help later
 #https://www.packtpub.com/mapt/book/application_development/9781785283932/5/ch05lvl1sec49/good-features-to-track
@@ -46,16 +48,19 @@ cv2.imshow("tg", thresh)
 
 
 #https://www.pyimagesearch.com/2014/04/21/building-pokedex-python-finding-game-boy-screen-step-4-6/
-gray = cv2.bilateralFilter(grayI, 11, 17, 17)
-edged = cv2.Canny(grayI, 30, 200)
+gray = cv2.bilateralFilter(gray, 11, 17, 17)
+edged = cv2.Canny(thresh, 30, 200)
+#edged = cv2.Canny(gray, 30, 200) # ORIGINAL
+#edged = cv2.Canny(grayI, 30, 200)
 
-cv2.imshow("edge", edged)
+#cv2.imshow("edge", edged)
 
-#(contours,_) = cv2.findContours(thresh, mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
 
+######################
+# Contours for QRCode
+'''
 (_,contoursEdge,_) = cv2.findContours(edged.copy(), mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
 
-#D = cv2.drawContours(thresh, contours, contourIdx = -1, color = (0,0,255), thickness = 5)
 
 
 cnts = sorted(contoursEdge, key = cv2.contourArea, reverse = True)[:10]
@@ -72,9 +77,10 @@ for c in cnts:
 		screenCnt = approx
 		break
 
-		
+'''	
 #Top left, Bottom left
 #Top right, Bottom right
+'''
 print (screenCnt)
 print ("\n")
 
@@ -92,24 +98,48 @@ botR = screenCnt[3]
 print (botR[0][0])
 
 print ("\n")
-y1 = screenCnt[0][0][1]
-y2 = screenCnt[2][0][1]
+'''
 
-x1 = screenCnt[0][0][0]
-x2 = screenCnt[2][0][0]
 
+#y1 = screenCnt[0][0][1]
+#y2 = screenCnt[2][0][1]
+
+#x1 = screenCnt[0][0][0]
+#x2 = screenCnt[2][0][0]
+
+
+'''
 print(y1)
 print(y2)
 print(x1)
 print(x2)
+'''
 
-
-cropped = plant[y1:y2, x1:x2] 
-cv2.imshow("croppedImage", cropped)
+#cropped = plant[y1:y2, x1:x2] 
+#cv2.imshow("croppedImage", cropped)
 #cv2.imwrite("qrextracted2.jpg", cropped)
 
-cv2.drawContours(plant, [screenCnt], -1, (0, 255, 0), 3)
-cv2.imshow("Game Boy Screen", plant)
+#cv2.drawContours(plant, [screenCnt], -1, (0, 255, 0), 3)
+#cv2.imshow("QRCode", plant)
 
+(_,contoursEdge,_) = cv2.findContours(edged.copy(), mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
+
+
+
+
+# Bounding rectangle
+#x,y,w,h = cv2.boundingRect(contoursEdge[1])
+#cv2.rectangle(plant, (x,y), (x+w, y+h), (0,255,0), 2)
+
+# Hull around contours
+#hull = cv2.convexHull(contoursEdge[0])
+#cv2.polylines(plant, pts=hull, isClosed = False, color=(0,255,255))
+
+
+
+img = cv2.drawContours(plant, contoursEdge, contourIdx=-1, color=(0,0,255), thickness=2)
+
+cv2.imshow("imgEdge", edged)
+cv2.imshow("img", img)
 
 cv2.waitKey(0)
