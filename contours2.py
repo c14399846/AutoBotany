@@ -13,6 +13,8 @@ plant2 = cv2.imread("plant2CopyCropped.png")
 plant3 = cv2.imread("plantqr.jpg")
 
 
+#cv2.imshow('plant2', plant2)
+
 '''
 plant = cv2.imread("newplant2.jpg")
 
@@ -31,9 +33,68 @@ grayImg = cv2.cvtColor(plant, cv2.COLOR_BGR2GRAY)
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 #grayImg = clahe.apply(grayImg)
 
-grayImg = cv2.bilateralFilter(grayImg, 11, 17, 17)
 
-thresh = cv2.adaptiveThreshold(grayImg,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,15,5)
+plantTEST = cv2.bilateralFilter(plant2, 11, 17, 17)
+plantLAB = cv2.cvtColor(plantTEST, cv2.COLOR_BGR2LAB)
+
+
+# MOVED FROM CODE BELOW
+l, a, b = cv2.split(plantLAB)
+#cv2.imshow('l_channel', l)
+#cv2.imshow('a_channel', a)
+#cv2.imshow('b_channel', b)
+
+
+#plant2 = clahe.apply(plant2)
+cl = clahe.apply(l)
+cv2.imshow('CLAHE output', cl)
+
+limg = cv2.merge((cl,a,b))
+#cv2.imshow('limg', limg)
+
+#-----Converting image from LAB Color model to RGB model--------------------
+final2 = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+grayImg2 = cv2.cvtColor(final2, cv2.COLOR_BGR2GRAY)
+
+cv2.imshow("final2", final2)
+
+
+
+# MOVED FROM CODE BELOW THIS
+# Colour Range
+lower2 = (40, 85, 50)
+higher2 = (150, 190, 205)
+
+#converted = cv2.cvtColor(plant2, cv2.COLOR_BGR2HSV)
+roiColour2 = cv2.inRange(final2, lower2, higher2) # THIS ONE IS BETTER I THINK
+#roiColour = cv2.inRange(final, lower, higher)
+
+kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+
+cv2.imshow('roi2', roiColour2)
+
+roiColour2 = cv2.dilate(roiColour2, kernel, iterations = 2)
+roiColour2 = cv2.erode(roiColour2, kernel, iterations = 2)
+
+skin2 = cv2.bitwise_and(final2, final2, mask = roiColour2)
+#skin = cv2.bitwise_and(final, final, mask = roiColour)
+
+cv2.imshow('skin2', skin2)
+
+
+
+
+
+
+
+grayImg = cv2.bilateralFilter(grayImg, 11, 17, 17)
+grayImg2 = cv2.bilateralFilter(grayImg2, 11, 17, 17)
+
+#cv2.imshow("grayImg", grayImg)
+#cv2.imshow("grayImg2", grayImg2)
+
+thresh = cv2.adaptiveThreshold(grayImg2,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,15,5)
 
 
 edged = cv2.Canny(thresh, 30, 200)
@@ -91,7 +152,7 @@ for i in range(10):
 	img = cv2.drawContours(plant, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness=2)
 
 	
-cv2.imshow("grayImg", grayImg)
+#cv2.imshow("grayImg", grayImg)
 cv2.imshow("imgEdge", edged)
 cv2.imshow("img", img)
 
@@ -159,24 +220,25 @@ print ("FINISH LOOPING\n")
 
 
 
+##########################
+#COLOUR WORK
 # https://stackoverflow.com/questions/24341114/simple-illumination-correction-in-images-opencv-c/24341809#24341809
 # USING LAB FOR CLAHE CONTRAST FIXING
 
 plantLAB = cv2.cvtColor(plant2, cv2.COLOR_BGR2LAB)
 
 l, a, b = cv2.split(plantLAB)
-cv2.imshow('l_channel', l)
-cv2.imshow('a_channel', a)
-cv2.imshow('b_channel', b)
+#cv2.imshow('l_channel', l)
+#cv2.imshow('a_channel', a)
+#cv2.imshow('b_channel', b)
 
 
 #plant2 = clahe.apply(plant2)
 cl = clahe.apply(l)
-cv2.imshow('CLAHE output', cl)
-
+#cv2.imshow('CLAHE output', cl)
 
 limg = cv2.merge((cl,a,b))
-cv2.imshow('limg', limg)
+#cv2.imshow('limg', limg)
 
 #-----Converting image from LAB Color model to RGB model--------------------
 final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
@@ -185,18 +247,15 @@ cv2.imshow('final', final)
 
 
 
-cv2.imshow('plant2', plant2)
+
 
 # VERY GOOD RANGE IN GENERAL
 lower = (40, 85, 50)
 higher = (165, 190, 160)
 
 #converted = cv2.cvtColor(plant2, cv2.COLOR_BGR2HSV)
-#roiColour = cv2.inRange(plant2, lower, higher)
-roiColour = cv2.inRange(final, lower, higher)
-
-
-
+roiColour = cv2.inRange(plant2, lower, higher) # THIS ONE IS BETTER I THINK
+#roiColour = cv2.inRange(final, lower, higher)
 
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 
@@ -205,13 +264,13 @@ cv2.imshow('roi', roiColour)
 roiColour = cv2.dilate(roiColour, kernel, iterations = 2)
 roiColour = cv2.erode(roiColour, kernel, iterations = 2)
 
-
-
 skin = cv2.bitwise_and(plant2, plant2, mask = roiColour)
+#skin = cv2.bitwise_and(final, final, mask = roiColour)
 
 cv2.imshow('skin', skin)
 
-
+##############
+# END COLOURWORK
 
 
 
@@ -219,13 +278,14 @@ cv2.imshow('skin', skin)
 # testing qr stuff again
 # it's the most distinct square thing, because I inserted it as such
 
-
 gray3 = cv2.cvtColor(plant3, cv2.COLOR_BGR2GRAY)
+
+gray3 = cv2.bilateralFilter(gray3, 11, 17, 17)
 
 thresh3 = cv2.adaptiveThreshold(gray3,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,15,5)
 
 
-gray3 = cv2.bilateralFilter(gray3, 11, 17, 17)
+#gray3 = cv2.bilateralFilter(gray3, 11, 17, 17)
 edged3 = cv2.Canny(thresh3, 30, 200)
 
 
