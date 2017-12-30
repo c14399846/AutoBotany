@@ -12,8 +12,43 @@ plant = cv2.imread("plant2CopyCropped.png")
 plant2 = cv2.imread("plant2CopyCropped.png")
 plant3 = cv2.imread("plantqr.jpg")
 
+pea = cv2.imread("PEA_9.png")
 
-#cv2.imshow('plant2', plant2)
+plant = pea
+plant2 = pea
+
+
+#TESTING OUT SATURATION THRESHOLDS
+s = cv2.cvtColor(plant, cv2.COLOR_BGR2HSV)
+_, s_thresh = cv2.threshold(s, 85, 255, cv2.THRESH_BINARY)
+
+s_thresh = cv2.cvtColor(s_thresh, cv2.COLOR_HSV2BGR)
+s_thresh = cv2.cvtColor(s_thresh, cv2.COLOR_BGR2GRAY)
+
+
+cv2.imshow('saturation', s)
+cv2.imshow('saturation_thresh', s_thresh)
+
+# Used this for some help
+# http://www.linoroid.com/2016/12/detect-a-green-color-object-with-opencv/
+# Simple example stuff (the lower / higher ranges)
+# 29 Dec 19:21
+#lower_green = (65,60,60)
+#upper_green = (80,255,255)
+
+# THIS IS ONE IS REALLY GOOD!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# 29 Dec 19:33
+lower_green = (30,60,60)
+upper_green = (80,255,255)
+
+hsvrange = cv2.inRange(s, lower_green, upper_green)
+
+cv2.imshow('hsvrange', hsvrange)
+
+# 30 Dec 2017 17:45
+plantLoc = cv2.bitwise_and(pea, pea, mask = hsvrange)
+
+cv2.imshow('plantLoc', plantLoc)
 
 '''
 plant = cv2.imread("newplant2.jpg")
@@ -32,6 +67,9 @@ grayImg = cv2.cvtColor(plant, cv2.COLOR_BGR2GRAY)
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 #grayImg = clahe.apply(grayImg)
+
+# 30 Dec 2017 17:50
+#plantTEST = cv2.bilateralFilter(plantLoc, 11, 17, 17) # WILL FIND THE GREEN PLANT, NEED TO CHANGE THE 'RANGE' TO LOWER THAN 10 (NUMBER OF PLANTS IN IMAGE)
 
 
 plantTEST = cv2.bilateralFilter(plant2, 11, 17, 17)
@@ -63,8 +101,17 @@ cv2.imshow("final2", final2)
 
 # MOVED FROM CODE BELOW THIS
 # Colour Range
-lower2 = (40, 85, 50)
-higher2 = (150, 190, 205)
+#lower2 = (40, 85, 50)
+#higher2 = (150, 190, 205)
+
+# 29 Dec
+#lower2 = (0, 5, 0)
+#higher2 = (15, 100, 90)
+
+lower2 = (0, 5, 0)
+higher2 = (45, 190, 120)
+
+
 
 #converted = cv2.cvtColor(plant2, cv2.COLOR_BGR2HSV)
 roiColour2 = cv2.inRange(final2, lower2, higher2) # THIS ONE IS BETTER I THINK
@@ -92,9 +139,11 @@ grayImg = cv2.bilateralFilter(grayImg, 11, 17, 17)
 grayImg2 = cv2.bilateralFilter(grayImg2, 11, 17, 17)
 
 #cv2.imshow("grayImg", grayImg)
-#cv2.imshow("grayImg2", grayImg2)
+cv2.imshow("grayImg2", grayImg2)
 
 thresh = cv2.adaptiveThreshold(grayImg2,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,15,5)
+
+cv2.imshow('thresh', thresh)
 
 
 edged = cv2.Canny(thresh, 30, 200)
