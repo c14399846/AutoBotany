@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from PIL import Image
 from matplotlib import pyplot as plt
 from matplotlib import image as image
 import easygui
@@ -9,88 +10,6 @@ lower_green = (30,60,60)
 upper_green = (80,255,255)
 
 
-#plantImg = cv2.imread("PEA_10.png")
-
-##################################################################################
-#DONE
-#####
-'''s = cv2.cvtColor(plant, cv2.COLOR_BGR2HSV)
-_, s_thresh = cv2.threshold(s, 85, 255, cv2.THRESH_BINARY)
-
-s_thresh = cv2.cvtColor(s_thresh, cv2.COLOR_HSV2BGR)
-s_thresh = cv2.cvtColor(s_thresh, cv2.COLOR_BGR2GRAY)
-'''
-
-#cv2.imshow('saturation', s)
-#cv2.imshow('saturation_thresh', s_thresh)
-
-# Used this for some help
-# http://www.linoroid.com/2016/12/detect-a-green-color-object-with-opencv/
-# Simple example stuff (the lower / higher ranges)
-# 29 Dec 19:21
-
-#################################################################################
-#DONE
-#####
-'''
-lower_green = (30,60,60)
-upper_green = (80,255,255)
-
-hsvrange = cv2.inRange(s, lower_green, upper_green)
-cv2.imshow('hsvrange', hsvrange)
-
-#Finding plants with this colour range
-plantLoc = cv2.bitwise_and(pea, pea, mask = hsvrange)
-
-cv2.imshow('plantLoc', plantLoc)
-'''
-
-
-####################################################################################
-#DONE
-#####
-'''
-bilateral = cv2.bilateralFilter(plantImg, 11, 17, 17)
-'''
-####################################################################################
-#DONE
-#####
-'''
-LAB = cv2.cvtColor(bilateral, cv2.COLOR_BGR2LAB)
-
-l, a, b = cv2.split(LAB)
-#cv2.imshow('l_channel', l)
-#cv2.imshow('a_channel', a)
-#cv2.imshow('b_channel', b)
-'''
-
-
-####################################################################################
-#DONE
-#####
-'''
-clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-cl = clahe.apply(l)
-cv2.imshow('CLAHE output', cl)
-'''
-
-####################################################################################
-#DONE
-#####
-'''limg = cv2.merge((cl,a,b))'''
-#cv2.imshow('limg', limg)
-
-#-----Converting image from LAB Color model to RGB model--------------------
-####################################################################################
-#DONE
-#####
-'''smoothedImg = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-
-grayImg = cv2.cvtColor(smoothedImg, cv2.COLOR_BGR2GRAY)
-
-cv2.imshow("smoothedImg", smoothedImg)
-
-'''
 
 
 # Read in plant image
@@ -139,7 +58,7 @@ def getColourRange(image, lower, upper):
 
 
 # Seperates colours in image that match the mask
-def getPlantMask(image, range):
+def getPlantLocation(image, range):
 
 	plantLocation = cv2.bitwise_and(image, image, mask = range)
 	
@@ -194,7 +113,7 @@ def mergeColourspace(first, second, third):
 # Merge LAB colour channels
 def mergeLAB(l, a, b):
 	
-	mergedLAB = cv2.merge((first, second, third))
+	mergedLAB = cv2.merge((l, a, b))
 
 	return mergedLAB
 
@@ -207,25 +126,104 @@ def convertLABBGR(image):
 
 	return bgr
 
+	
+
+	
+# Shows all processed images
+# WORK IN PROGRESS
+def showImages():
+	return
+	
 
 # The full image process pipeline
 def process(plantOrig):
 
-# WORK IN PROGRESS HERE
-'''
+	processedImages = []
+	count = 0
+	
+	
+	# WORK IN PROGRESS HERE
+
 	# Converts image to HSV colourspace
 	# Gets colours in a certain range
 	hsv = convertBGRHSV(plantOrig)
-	hsvrange = getColourRange(hsv)
-	
-	#threshold = getThreshold(hsvrange, 85, 255)
-	
-	bilateral = applyBilateralFilter(hsvrange, 11, 17, 17)
-	contrastSmoothed = applyCLAHE(bilateral)
-'''	
-	
+	hsvrange = getColourRange(hsv, lower_green, upper_green)
+	if(addhsvrange):
+		processedImages.append([])
+		processedImages[count].append(hsvrange)
+		processedImages[count].append("hsvrange")
+		count += 1
+		#processedImages.append(Image.open(hsvrange))
+		#cv2.imshow("hsv", hsv)
 
 	
+	# Applies filters to blend colours
+	# *Might* make plant extraction easier
+	# (for edges / contours)
+	bilateral = applyBilateralFilter(plantOrig, 11, 17, 17)
+	lab = convertBGRLAB(bilateral)
+	if(addlab):
+		processedImages.append([])
+		processedImages[count].append(lab)
+		processedImages[count].append("lab")
+		count += 1
+		#cv2.imshow("lab", lab)
+	
+	# Split LAB colour channels, apply CLAHE
+	labChannels = splitLAB(lab)
+	l = applyCLAHE(labChannels[0])
+	a = labChannels[1]
+	b = labChannels[2]
+	
+	
+	# Merge colour channels, convert back to BGR
+	labSmoothed = mergeLAB(l, a, b)
+	labBGR = convertLABBGR(labSmoothed)
+	if(addlabBGR):
+		processedImages.append([])
+		processedImages[count].append(labBGR)
+		processedImages[count].append("labBGR")
+		count += 1
+		#cv2.imshow("labBGR", labBGR)
+	
+	
+	# Convert Filtered image to HSV, get colour range for mask
+	filtered = convertBGRHSV(labBGR)
+	filteredRange = getColourRange(filtered, lower_green, upper_green)
+	if(addfilteredRange):
+		processedImages.append([])
+		processedImages[count].append(filteredRange)
+		processedImages[count].append("filteredRange")
+		count += 1
+		#cv2.imshow("addfilteredRange", addfilteredRange)
+	
+	
+	origImgLoc = getPlantLocation(plantOrig, hsvrange)
+	if(addorigImgLoc):
+		processedImages.append([])
+		processedImages[count].append(origImgLoc)
+		processedImages[count].append("origImgLoc")
+		count += 1
+	
+	
+	filteredImgLoc = getPlantLocation(plantOrig, filteredRange)
+	if(addfilteredImgLoc):
+		processedImages.append([])
+		processedImages[count].append(filteredImgLoc)
+		processedImages[count].append("filteredImgLoc")
+		count += 1
+	
+	#cv2.imshow("origImgLoc", origImLoc)
+	#cv2.imshow("filteredImgLoc", filteredImgLoc)
+	
+	
+	if(showAll):
+		print (count)
+		for i in range(count):
+			cv2.imshow(processedImages[i][1], processedImages[i][0])
+	cv2.waitKey(0)
+
+
 # STARTS HERE
 # OPENS FILE / SOMEHOW GETS FILE
 # FROM STORAGE, OR FROM CAMERA*
@@ -233,11 +231,27 @@ def process(plantOrig):
 
 file = easygui.fileopenbox()
 plantImg = readInPlant(file)
+cv2.imshow("plantImg", plantImg)
 
-processed = process(plantImg)
-	
-	
-	
+
+
+
+# Set bool to append / not append images to list
+addhsvrange = False
+addlab = False
+addlabBGR = False
+addfilteredRange = False
+addorigImgLoc = True
+addfilteredImgLoc = True
+
+# Set bool to Show all images added to list
+showAll = True
+
+
+
+
+# Processing pipeline
+process(plantImg)
 	
 	
 	
