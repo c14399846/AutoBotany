@@ -12,7 +12,7 @@ plant = cv2.imread("plant2CopyCropped.png")
 plant2 = cv2.imread("plant2CopyCropped.png")
 plant3 = cv2.imread("plantqr.jpg")
 
-pea = cv2.imread("PEA_9.png")
+pea = cv2.imread("PEA_10.png")
 
 plant = pea
 plant2 = pea
