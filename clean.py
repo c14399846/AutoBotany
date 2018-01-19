@@ -219,12 +219,17 @@ def getContours(plant, edge):
 	for i in range(numberPlants):
 		
 		# Draw rectangles, with order of Contour size
-		'''
+		
 		place = i
 		x,y,w,h = cv2.boundingRect(contoursEdge[i])
-		cv2.rectangle(baseImg, (x,y), (x+w, y+h), (0,255,0), 2)
-		cv2.putText(baseImg,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)
-		'''
+		#cv2.rectangle(baseImg, (x,y), (x+w, y+h), (0,255,0), 2)
+		#cv2.putText(baseImg,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)
+		
+		# Crops plant out of image, for later usage
+		cropped = baseImg[y-5:y+h+5, x-5:x+w+5]
+		cv2.imshow("cropped", cropped)
+
+		cv2.waitKey(0)
 		
 		# Other kind of Contouring
 		#epsilon = 0.01*cv2.arcLength(contoursEdge[i],True)
@@ -434,12 +439,6 @@ def process(plantOrig):
 # FROM STORAGE, OR FROM CAMERA*
 # *(Need to add camera operations, maybe)
 
-file = easygui.fileopenbox()
-plantImg = readInPlant(file)
-cv2.imshow("plantImg", plantImg)
-
-
-
 
 # Set bool to append / not append images to list
 addhsvrange = False
@@ -457,10 +456,30 @@ adddoubleEdge = True
 #addcontourFiltered = True
 addcontourRes = True
 
+
 # Set bool to Show all images added to list
 showAll = True
 
+# Number of plants in image (Can be defined by user later on)
 numberPlants = 2
+
+
+
+
+file = easygui.fileopenbox()
+plantImg = readInPlant(file)
+
+height, width = plantImg.shape[:2]
+resized = cv2.resize(plantImg,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
+
+
+
+cv2.imshow("plantImg", plantImg)
+
+
+
+
+
 
 
 # Processing pipeline
