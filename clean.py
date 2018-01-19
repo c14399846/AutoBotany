@@ -39,6 +39,15 @@ def convertBGRHSV(image):
 
 
 
+# Converts HSV to BGR
+def convertHSVBGR(image):
+
+	BGR = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+
+	return BGR
+
+
+
 # Threshold of image
 def getThreshold(image, lowerTH, upperTH):
 
@@ -134,6 +143,37 @@ def convertLABBGR(image):
 def showImages():
 	return
 	
+	
+
+# Gets Contours using edges derived from a mask image
+def getContours(plant, edge):
+
+	(_,contoursEdge,_) = cv2.findContours(edge, mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
+
+
+	# Area
+	contoursEdge = sorted(contoursEdge, key = cv2.contourArea, reverse = True)
+
+	font = cv2.FONT_HERSHEY_SIMPLEX
+	
+	# Finds largest contours in the image, from sorted contours
+	for i in range(numberPlants):
+		
+		'''
+		place = i
+		x,y,w,h = cv2.boundingRect(contoursEdge[i])
+		cv2.rectangle(plant, (x,y), (x+w, y+h), (0,255,0), 2)
+		cv2.putText(plant,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)
+		'''
+		
+		
+		hull = cv2.convexHull(contoursEdge[i])
+		cv2.polylines(plant, pts=hull, isClosed=True, color=(0,255,255))
+		img = cv2.drawContours(plant, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness=2)
+
+	return plant
+	
+	
 
 # The full image process pipeline
 def process(plantOrig):
@@ -217,6 +257,39 @@ def process(plantOrig):
 	#cv2.imshow("filteredImgLoc", filteredImgLoc)
 	
 	
+	
+	'''
+		This section of code needs to be cleaned up,
+		and turned into a more dynamic solution
+	
+	
+	'''
+	
+	
+	# It has an interesting result, might look at later
+	#BGRImgLoc = convertHSVBGR(origImgLoc)
+	edgeLoc = cv2.Canny(origImgLoc, 30, 200)
+	plantC = plantOrig.copy()
+	cv2.imshow("origImgLoc", origImgLoc)
+	cv2.imshow("edgeLoc", edgeLoc)
+	
+	
+	
+	edgeLoc2 = cv2.Canny(filteredImgLoc, 30, 200)
+	plantC2 = plantOrig.copy()
+	cv2.imshow("filteredImgLoc", filteredImgLoc)
+	cv2.imshow("edgeLoc2", edgeLoc2)
+	
+	
+	con1 = getContours(plantC, edgeLoc)
+	con2 = getContours(plantC2, edgeLoc2)
+	
+	
+	cv2.imshow("con1", con1)
+	cv2.imshow("con2", con2) # THIS ONE SUCKS ASS, ADD SOME ERODES AND DILATES
+	
+	
+	
 	if(showAll):
 		print (count)
 		for i in range(count):
@@ -245,9 +318,9 @@ addorigImgLoc = True
 addfilteredImgLoc = True
 
 # Set bool to Show all images added to list
-showAll = True
+showAll = False
 
-
+numberPlants = 2
 
 
 # Processing pipeline
