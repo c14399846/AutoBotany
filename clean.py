@@ -218,6 +218,7 @@ def getContours(plant, edge):
 # The full image process pipeline
 def process(plantOrig):
 
+	kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
 	processedImages = []
 	count = 0
 	
@@ -268,8 +269,20 @@ def process(plantOrig):
 	#cv2.imshow("labBGR", labBGR)
 	
 	
+	##########################################################
+	#		TEST CODE CHANGED FROM 'labBGR' TO 'bilateral'	 #
+	##########################################################
 	# Convert Filtered image to HSV, get colour range for mask
-	filtered = convertBGRHSV(labBGR)
+	filtered = convertBGRHSV(bilateral)
+	
+	##########################
+	# 		TEST CODE 		 #
+	##########################
+	#sharp = cv2.filter2D(filtered, ddepth = -1, kernel = kernelSharp)
+	#cv2.imshow("sharp", sharp)
+	#cv2.imshow("filt", filtered)
+	#filtered = sharp
+	
 	filteredRange = getColourRange(filtered, lower_green, upper_green)
 	if(addfilteredRange):
 		processedImages.append([])
@@ -288,14 +301,12 @@ def process(plantOrig):
 		count += 1
 	#cv2.imshow("origImgLoc", origImgLoc)
 	
-	
 	##########################################################################
 	# 						TEST CODE REMOVE LATER 							 #
 	##########################################################################
-	morphed = applyMorph(filteredRange)
-	filteredRange = morphed
-	cv2.imshow("morphed", morphed)
-	
+	#morphed = applyMorph(filteredRange)
+	#filteredRange = morphed
+	#cv2.imshow("morphed", morphed)
 	
 	
 	
@@ -345,6 +356,63 @@ def process(plantOrig):
 	#cv2.imshow("edgeFilteredLoc", edgeFilteredLoc2)
 	
 	
+	
+	
+	
+	# Adds the two Canny Edges together, better coverage achieved
+	#
+	# https://docs.opencv.org/3.2.0/d0/d86/tutorial_py_image_arithmetics.html
+	# Reference code
+	# NEED TO CLEAN THIS STUFF
+	
+	img1 = edgeLoc.copy()
+	img2 = edgeFilteredLoc.copy()
+	
+	shape = plantOrig.shape
+	
+	
+	# I want to put logo on top-left corner, So I create a ROI
+	rows,cols,channels = shape
+	roi = img1[0:rows, 0:cols ]
+	# Now create a mask of logo and create its inverse mask also
+	#img2gray = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)
+	img2gray = img2.copy()
+	ret, mask = cv2.threshold(img2gray, 10, 255, cv2.THRESH_BINARY)
+	mask_inv = cv2.bitwise_not(mask)
+	# Now black-out the area of logo in ROI
+	img1_bg = cv2.bitwise_and(roi,roi,mask = mask_inv)
+	# Take only region of logo from logo image.
+	img2_fg = cv2.bitwise_and(img2,img2,mask = mask)
+	# Put logo in ROI and modify the main image
+	dst = cv2.add(img1_bg,img2_fg)
+	img1[0:rows, 0:cols ] = dst
+	
+	cv2.imshow('res',img1)
+	
+	# Finds Contours from Both Edges
+	contourRes = getContours(plantOrig, img1)
+	if(addcontourRes):
+		processedImages.append([])
+		processedImages[count].append(contourRes)
+		processedImages[count].append("contourRes")
+		count += 1
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	# Finds Contours from Edges
 	contour = getContours(plantOrig, edgeLoc)
 	if(addcontour):
@@ -390,14 +458,15 @@ cv2.imshow("plantImg", plantImg)
 addhsvrange = False
 addlab = False
 addlabBGR = False
-addfilteredRange = True
+addfilteredRange = False
 addorigImgLoc = False
-addfilteredImgLoc = True
+addfilteredImgLoc = False
 
-addedgeLoc = False
+addedgeLoc = True
 addedgeFilteredLoc = True
-addcontour = False
+addcontour = True
 addcontourFiltered = True
+addcontourRes = True
 
 # Set bool to Show all images added to list
 showAll = True
