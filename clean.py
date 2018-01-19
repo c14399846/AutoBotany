@@ -143,20 +143,58 @@ def convertLABBGR(image):
 def showImages():
 	return
 	
+
+
+# Apply Canny Edge
+def applyCanny(image, lowerEdge, upperEdge):
+
+	canny = cv2.Canny(image,lowerEdge, upperEdge)
 	
+	return canny
+	
+
+	
+# Apply Morphological Processes
+def applyMorph(image):
+
+	largeMorph = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
+	smallMorph = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+
+	image = cv2.dilate(image,largeMorph)
+	#image = cv2.erode(image,largeMorph)
+	#image = cv2.dilate(image,smallMorph)
+	
+	return image
+
+
 
 # Gets Contours using edges derived from a mask image
 def getContours(plant, edge):
 
+	# Makes a copy of original plant image 
+	#(contours draw on the image supplied, use temp image)
+	baseImg = plant.copy()
+
+	
+	# Finds contours (Have to be closed edges)
 	(_,contoursEdge,_) = cv2.findContours(edge, mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
 
 
-	# Area
+	# Find largest contours by Area (Have to be closed contours)
 	contoursEdge = sorted(contoursEdge, key = cv2.contourArea, reverse = True)
 
+	
+	# Font for drawing text on image
 	font = cv2.FONT_HERSHEY_SIMPLEX
 	
+	
 	# Finds largest contours in the image, from sorted contours
+	
+	##################################################################
+	# NEED TO ADD THRESHOLD MIN SIZE FOR CONTOURS 
+	# (if a plant hasn't sprouted yet, adds random contours)
+	##################################################################
+	
 	for i in range(numberPlants):
 		
 		'''
@@ -166,12 +204,14 @@ def getContours(plant, edge):
 		cv2.putText(plant,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)
 		'''
 		
+		epsilon = 0.01*cv2.arcLength(contoursEdge[i],True)
+		approx = cv2.approxPolyDP(contoursEdge[i],epsilon,True)
 		
 		hull = cv2.convexHull(contoursEdge[i])
-		cv2.polylines(plant, pts=hull, isClosed=True, color=(0,255,255))
-		img = cv2.drawContours(plant, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness=2)
+		cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
+		img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 2)
 
-	return plant
+	return baseImg
 	
 	
 
@@ -193,8 +233,9 @@ def process(plantOrig):
 		processedImages[count].append(hsvrange)
 		processedImages[count].append("hsvrange")
 		count += 1
-		#processedImages.append(Image.open(hsvrange))
-		#cv2.imshow("hsv", hsv)
+	#processedImages.append(Image.open(hsvrange))
+	#cv2.imshow("hsv", hsv)
+	#cv2.imshow("hsvrange", hsvrange)
 
 	
 	# Applies filters to blend colours
@@ -207,7 +248,7 @@ def process(plantOrig):
 		processedImages[count].append(lab)
 		processedImages[count].append("lab")
 		count += 1
-		#cv2.imshow("lab", lab)
+	#cv2.imshow("lab", lab)
 	
 	# Split LAB colour channels, apply CLAHE
 	labChannels = splitLAB(lab)
@@ -224,7 +265,7 @@ def process(plantOrig):
 		processedImages[count].append(labBGR)
 		processedImages[count].append("labBGR")
 		count += 1
-		#cv2.imshow("labBGR", labBGR)
+	#cv2.imshow("labBGR", labBGR)
 	
 	
 	# Convert Filtered image to HSV, get colour range for mask
@@ -235,58 +276,94 @@ def process(plantOrig):
 		processedImages[count].append(filteredRange)
 		processedImages[count].append("filteredRange")
 		count += 1
-		#cv2.imshow("addfilteredRange", addfilteredRange)
+	#cv2.imshow("addfilteredRange", addfilteredRange)
 	
 	
+	# Finds Plant Pixels matching the Mask
 	origImgLoc = getPlantLocation(plantOrig, hsvrange)
 	if(addorigImgLoc):
 		processedImages.append([])
 		processedImages[count].append(origImgLoc)
 		processedImages[count].append("origImgLoc")
 		count += 1
+	#cv2.imshow("origImgLoc", origImgLoc)
 	
 	
+	##########################################################################
+	# 						TEST CODE REMOVE LATER 							 #
+	##########################################################################
+	morphed = applyMorph(filteredRange)
+	filteredRange = morphed
+	cv2.imshow("morphed", morphed)
+	
+	
+	
+	
+	# Finds Plant Pixels matching the Filtered Mask
 	filteredImgLoc = getPlantLocation(plantOrig, filteredRange)
 	if(addfilteredImgLoc):
 		processedImages.append([])
 		processedImages[count].append(filteredImgLoc)
 		processedImages[count].append("filteredImgLoc")
 		count += 1
-	
-	#cv2.imshow("origImgLoc", origImLoc)
 	#cv2.imshow("filteredImgLoc", filteredImgLoc)
 	
 	
 	
-	'''
-		This section of code needs to be cleaned up,
-		and turned into a more dynamic solution
-	
-	
-	'''
-	
-	
 	# It has an interesting result, might look at later
 	#BGRImgLoc = convertHSVBGR(origImgLoc)
-	edgeLoc = cv2.Canny(origImgLoc, 30, 200)
-	plantC = plantOrig.copy()
-	cv2.imshow("origImgLoc", origImgLoc)
-	cv2.imshow("edgeLoc", edgeLoc)
 	
 	
+	# NOT A GOOD PLACE TO MORPH 
+	'''
+	morph1 = applyMorph(origImgLoc)
+	morph2 = applyMorph(filteredImgLoc)
 	
-	edgeLoc2 = cv2.Canny(filteredImgLoc, 30, 200)
-	plantC2 = plantOrig.copy()
-	cv2.imshow("filteredImgLoc", filteredImgLoc)
-	cv2.imshow("edgeLoc2", edgeLoc2)
+	cv2.imshow("orig", origImgLoc)
+	cv2.imshow("morph1", morph1)
+	cv2.imshow("filt", filteredImgLoc)
+	cv2.imshow("morph2", morph2)
+	'''
+	
+	# Gets Edges of Plant Pixels
+	edgeLoc = applyCanny(origImgLoc, 30, 200)
+	if(addedgeLoc):
+		processedImages.append([])
+		processedImages[count].append(edgeLoc)
+		processedImages[count].append("edgeLoc")
+		count += 1
+	#cv2.imshow("edgeLoc", edgeLoc)
 	
 	
-	con1 = getContours(plantC, edgeLoc)
-	con2 = getContours(plantC2, edgeLoc2)
+	# Gets Edges of Filtered Plant Pixels
+	edgeFilteredLoc = applyCanny(filteredImgLoc, 30, 200)
+	if(addedgeFilteredLoc):
+		processedImages.append([])
+		processedImages[count].append(edgeFilteredLoc)
+		processedImages[count].append("edgeFilteredLoc")
+		count += 1
+	#cv2.imshow("edgeFilteredLoc", edgeFilteredLoc2)
 	
 	
-	cv2.imshow("con1", con1)
-	cv2.imshow("con2", con2) # THIS ONE SUCKS ASS, ADD SOME ERODES AND DILATES
+	# Finds Contours from Edges
+	contour = getContours(plantOrig, edgeLoc)
+	if(addcontour):
+		processedImages.append([])
+		processedImages[count].append(contour)
+		processedImages[count].append("contour")
+		count += 1
+	#cv2.imshow("con1", con1)
+	
+	
+	# Finds Contours from Filtered Edges
+	contourFiltered = getContours(plantOrig, edgeFilteredLoc)
+	if(addcontourFiltered):
+		processedImages.append([])
+		processedImages[count].append(contourFiltered)
+		processedImages[count].append("contourFiltered")
+		count += 1
+	#cv2.imshow("con2", con2) 
+	#THIS ONE IS NOT GREAT, FIX THE FILTERING
 	
 	
 	
@@ -313,12 +390,17 @@ cv2.imshow("plantImg", plantImg)
 addhsvrange = False
 addlab = False
 addlabBGR = False
-addfilteredRange = False
-addorigImgLoc = True
+addfilteredRange = True
+addorigImgLoc = False
 addfilteredImgLoc = True
 
+addedgeLoc = False
+addedgeFilteredLoc = True
+addcontour = False
+addcontourFiltered = True
+
 # Set bool to Show all images added to list
-showAll = False
+showAll = True
 
 numberPlants = 2
 
