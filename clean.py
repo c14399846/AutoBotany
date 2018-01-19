@@ -6,8 +6,8 @@ from matplotlib import image as image
 import easygui
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-lower_green = (30,60,60)
-upper_green = (80,255,255)
+lower_green = (30,60,60) 			# Lower plant Colourspace (HSV)
+upper_green = (80,255,255) 			# Upper plant Colourspace (HSV)
 
 
 
@@ -73,6 +73,7 @@ def getPlantLocation(image, range):
 	
 	return plantLocation
 	
+
 
 # Applies bilateral filter to an image
 def applyBilateralFilter(image,d,sigmaColor,sigmaSpace):
@@ -166,6 +167,26 @@ def applyMorph(image):
 	
 	return image
 
+	
+	
+# Merges 2 Edge images together to find better Contours
+def mergeEdges(img1, img2, imgShape):	
+	
+	rows,cols,channels = imgShape
+	roi = img1[0:rows, 0:cols ]
+	
+	img2gray = img2.copy()
+	ret, mask = cv2.threshold(img2gray, 10, 255, cv2.THRESH_BINARY)
+	
+	mask_inv = cv2.bitwise_not(mask)
+	img1_bg = cv2.bitwise_and(roi,roi,mask = mask_inv)
+	img2_fg = cv2.bitwise_and(img2,img2,mask = mask)
+	
+	dst = cv2.add(img1_bg,img2_fg)
+	img1[0:rows, 0:cols ] = dst
+	
+	return img1
+	
 
 
 # Gets Contours using edges derived from a mask image
@@ -197,19 +218,21 @@ def getContours(plant, edge):
 	
 	for i in range(numberPlants):
 		
+		# Draw rectangles, with order of Contour size
 		'''
 		place = i
 		x,y,w,h = cv2.boundingRect(contoursEdge[i])
-		cv2.rectangle(plant, (x,y), (x+w, y+h), (0,255,0), 2)
-		cv2.putText(plant,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)
+		cv2.rectangle(baseImg, (x,y), (x+w, y+h), (0,255,0), 2)
+		cv2.putText(baseImg,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)
 		'''
 		
-		epsilon = 0.01*cv2.arcLength(contoursEdge[i],True)
-		approx = cv2.approxPolyDP(contoursEdge[i],epsilon,True)
+		# Other kind of Contouring
+		#epsilon = 0.01*cv2.arcLength(contoursEdge[i],True)
+		#approx = cv2.approxPolyDP(contoursEdge[i],epsilon,True)
 		
 		hull = cv2.convexHull(contoursEdge[i])
 		cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
-		img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 2)
+		img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
 
 	return baseImg
 	
@@ -218,12 +241,9 @@ def getContours(plant, edge):
 # The full image process pipeline
 def process(plantOrig):
 
-	kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
-	processedImages = []
-	count = 0
+	processedImages = [] # Array of processed images
+	count = 0 			 # Integer that holds number of images processed + saved
 	
-	
-	# WORK IN PROGRESS HERE
 
 	# Converts image to HSV colourspace
 	# Gets colours in a certain range
@@ -234,15 +254,18 @@ def process(plantOrig):
 		processedImages[count].append(hsvrange)
 		processedImages[count].append("hsvrange")
 		count += 1
-	#processedImages.append(Image.open(hsvrange))
 	#cv2.imshow("hsv", hsv)
 	#cv2.imshow("hsvrange", hsvrange)
 
 	
 	# Applies filters to blend colours
-	# *Might* make plant extraction easier
-	# (for edges / contours)
+	# *Might* make plant extraction easier (for edges / contours)
 	bilateral = applyBilateralFilter(plantOrig, 11, 17, 17)
+	
+	
+	# NOT AS USEFUL ANYMORE,
+	# MAYBE FOR OTHER PLANTS / SCENARIOS
+	'''
 	lab = convertBGRLAB(bilateral)
 	if(addlab):
 		processedImages.append([])
@@ -267,22 +290,14 @@ def process(plantOrig):
 		processedImages[count].append("labBGR")
 		count += 1
 	#cv2.imshow("labBGR", labBGR)
-	
+	'''
 	
 	##########################################################
 	#		TEST CODE CHANGED FROM 'labBGR' TO 'bilateral'	 #
 	##########################################################
+	
 	# Convert Filtered image to HSV, get colour range for mask
 	filtered = convertBGRHSV(bilateral)
-	
-	##########################
-	# 		TEST CODE 		 #
-	##########################
-	#sharp = cv2.filter2D(filtered, ddepth = -1, kernel = kernelSharp)
-	#cv2.imshow("sharp", sharp)
-	#cv2.imshow("filt", filtered)
-	#filtered = sharp
-	
 	filteredRange = getColourRange(filtered, lower_green, upper_green)
 	if(addfilteredRange):
 		processedImages.append([])
@@ -290,6 +305,7 @@ def process(plantOrig):
 		processedImages[count].append("filteredRange")
 		count += 1
 	#cv2.imshow("addfilteredRange", addfilteredRange)
+	
 	
 	
 	# Finds Plant Pixels matching the Mask
@@ -300,13 +316,6 @@ def process(plantOrig):
 		processedImages[count].append("origImgLoc")
 		count += 1
 	#cv2.imshow("origImgLoc", origImgLoc)
-	
-	##########################################################################
-	# 						TEST CODE REMOVE LATER 							 #
-	##########################################################################
-	#morphed = applyMorph(filteredRange)
-	#filteredRange = morphed
-	#cv2.imshow("morphed", morphed)
 	
 	
 	
@@ -325,7 +334,9 @@ def process(plantOrig):
 	#BGRImgLoc = convertHSVBGR(origImgLoc)
 	
 	
-	# NOT A GOOD PLACE TO MORPH 
+	
+	# NOT A GOOD PLACE TO MORPH,
+	# STILL LOOKING INTO IT
 	'''
 	morph1 = applyMorph(origImgLoc)
 	morph2 = applyMorph(filteredImgLoc)
@@ -336,7 +347,8 @@ def process(plantOrig):
 	cv2.imshow("morph2", morph2)
 	'''
 	
-	# Gets Edges of Plant Pixels
+	
+	# Gets Canny Edges of Plant Pixels
 	edgeLoc = applyCanny(origImgLoc, 30, 200)
 	if(addedgeLoc):
 		processedImages.append([])
@@ -346,7 +358,8 @@ def process(plantOrig):
 	#cv2.imshow("edgeLoc", edgeLoc)
 	
 	
-	# Gets Edges of Filtered Plant Pixels
+	
+	# Gets Canny Edges of Filtered Plant Pixels
 	edgeFilteredLoc = applyCanny(filteredImgLoc, 30, 200)
 	if(addedgeFilteredLoc):
 		processedImages.append([])
@@ -359,60 +372,36 @@ def process(plantOrig):
 	
 	
 	
-	# Adds the two Canny Edges together, better coverage achieved
+	# Adds the 2 Canny Edges together, better Countour coverage achieved
 	#
 	# https://docs.opencv.org/3.2.0/d0/d86/tutorial_py_image_arithmetics.html
 	# Reference code
-	# NEED TO CLEAN THIS STUFF
-	
-	img1 = edgeLoc.copy()
-	img2 = edgeFilteredLoc.copy()
-	
+	edge1 = edgeLoc.copy()
+	edge2 = edgeFilteredLoc.copy()
 	shape = plantOrig.shape
 	
+	doubleEdge = mergeEdges(edge1, edge2, shape)
+	if(adddoubleEdge):
+		processedImages.append([])
+		processedImages[count].append(doubleEdge)
+		processedImages[count].append("doubleEdge")
+		count += 1
+	#cv2.imshow("doubleEdge", doubleEdge)
 	
-	# I want to put logo on top-left corner, So I create a ROI
-	rows,cols,channels = shape
-	roi = img1[0:rows, 0:cols ]
-	# Now create a mask of logo and create its inverse mask also
-	#img2gray = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)
-	img2gray = img2.copy()
-	ret, mask = cv2.threshold(img2gray, 10, 255, cv2.THRESH_BINARY)
-	mask_inv = cv2.bitwise_not(mask)
-	# Now black-out the area of logo in ROI
-	img1_bg = cv2.bitwise_and(roi,roi,mask = mask_inv)
-	# Take only region of logo from logo image.
-	img2_fg = cv2.bitwise_and(img2,img2,mask = mask)
-	# Put logo in ROI and modify the main image
-	dst = cv2.add(img1_bg,img2_fg)
-	img1[0:rows, 0:cols ] = dst
-	
-	cv2.imshow('res',img1)
 	
 	# Finds Contours from Both Edges
-	contourRes = getContours(plantOrig, img1)
+	contourRes = getContours(plantOrig, doubleEdge)
 	if(addcontourRes):
 		processedImages.append([])
 		processedImages[count].append(contourRes)
 		processedImages[count].append("contourRes")
 		count += 1
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	#cv2.imshow("contourRes", contourRes)
+
+	# Good in some cases,
+	# Less good in larger plant sizes / shapes.
+	# Made somewhat redundant by above Double-Edge mix.
+	'''
 	# Finds Contours from Edges
 	contour = getContours(plantOrig, edgeLoc)
 	if(addcontour):
@@ -431,12 +420,10 @@ def process(plantOrig):
 		processedImages[count].append("contourFiltered")
 		count += 1
 	#cv2.imshow("con2", con2) 
-	#THIS ONE IS NOT GREAT, FIX THE FILTERING
-	
-	
+	'''
 	
 	if(showAll):
-		print (count)
+		#print (count)
 		for i in range(count):
 			cv2.imshow(processedImages[i][1], processedImages[i][0])
 	cv2.waitKey(0)
@@ -462,10 +449,12 @@ addfilteredRange = False
 addorigImgLoc = False
 addfilteredImgLoc = False
 
-addedgeLoc = True
-addedgeFilteredLoc = True
-addcontour = True
-addcontourFiltered = True
+addedgeLoc = False
+addedgeFilteredLoc = False
+adddoubleEdge = True
+
+#addcontour = True
+#addcontourFiltered = True
 addcontourRes = True
 
 # Set bool to Show all images added to list
