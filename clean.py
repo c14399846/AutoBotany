@@ -74,8 +74,17 @@ def getPlantLocation(image, range):
 	plantLocation = cv2.bitwise_and(image, image, mask = range)
 	
 	return plantLocation
-	
 
+
+
+# Merge Plant Locations
+def mergePlantLocations(image1, image2):
+	
+	mergedPlants = cv2.addWeighted(image1, 0.5, image2, 0.5, 0)
+	
+	return mergedPlants	
+	
+	
 
 # Applies bilateral filter to an image
 def applyBilateralFilter(image,d,sigmaColor,sigmaSpace):
@@ -371,6 +380,8 @@ def process(plantOrig):
 	#cv2.imshow("filteredImgLoc", filteredImgLoc)
 	
 	
+	mergedPlantAreas = mergePlantLocations(origImgLoc, filteredImgLoc)
+	
 	
 	# It has an interesting result, might look at later
 	#BGRImgLoc = convertHSVBGR(origImgLoc)
@@ -494,7 +505,7 @@ def process(plantOrig):
 			cv2.imshow(processedImages[i][1], processedImages[i][0])
 	cv2.waitKey(0)
 	
-	return contourRes
+	return contourRes, mergedPlantAreas
 
 # STARTS HERE
 # OPENS FILE / SOMEHOW GETS FILE
@@ -545,7 +556,7 @@ cv2.imshow("plantImg", plantImg)
 
 
 # Processing pipeline
-processed = process(plantImg)
+processed, pContours = process(plantImg)
 cv2.imshow("processed", processed)
 
 cv2.waitKey(0)
@@ -657,7 +668,7 @@ while(1):
 
 # Draw on Areas you want to add / remove from the plant image
 # Re-process to get ideal contours / features
-def drawOver(image, reference):
+def drawOver(image, reference, contours):
 
 	print ("\nPress 'a' to add area \n")
 	print ("Press 'r' to remove area \n")
@@ -667,10 +678,6 @@ def drawOver(image, reference):
 	drawHSV = reference.copy()
 	height, width = output.shape[:2]
 	
-	
-	#cv2.imshow("Processed Image", reference)
-	#cv2.imshow("Original Image", image)
-	
 	imageRes = cv2.resize(image, (int(width/2), int(height/2)))
 	referenceRes = cv2.resize(reference, (int(width/2), int(height/2)))
 	combined = np.concatenate((imageRes, referenceRes), axis=0)
@@ -679,7 +686,7 @@ def drawOver(image, reference):
 	cv2.imshow("combined Image", combined)
 	
 	#drawing = False # true if mouse is pressed
-	ix,iy = -1,-1
+	ix,iy = -1, -1
 	cSize = 5 # Circle size for drawing
 	cColour = (0,0,255) # (255,0,0)
 
@@ -706,7 +713,6 @@ def drawOver(image, reference):
 			cv2.circle(tmpImg, (x,y), cSize, cColour, -1)
 			drawing = False
 
-	#img = np.zeros((512,512,3), np.uint8)
 	cv2.namedWindow('drawHSV')
 	cv2.setMouseCallback('drawHSV',draw_circle_TEST)
 
@@ -717,13 +723,6 @@ def drawOver(image, reference):
 		k = cv2.waitKey(1) & 0xFF
 		if k == 27:
 			break
-		
-		#if k == ord('i'):
-		#	cSize += 1
-		
-		#if k == ord('d'):
-		#	if(cSize >= 2):
-		#		cSize = cSize-1
 
 		if k == ord('i'):
 			cSize += 1
@@ -736,8 +735,8 @@ def drawOver(image, reference):
 		if k == ord('r'):
 			cColour = (0,0,255)
 		
-	cv2.destroyAllWindows()
-	cv2.waitKey(0)
+	#cv2.destroyAllWindows()
+	#cv2.waitKey(0)
 
 	#tmpGray = cv2.cvtColor(tmpImg,cv2.COLOR_BGR2GRAY)
 	#ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
@@ -780,9 +779,13 @@ def drawOver(image, reference):
 	#corrected = cv2.bitwise_or(corrected, output, mask = roiR)
 	#cv2.imshow("Corr R", corrected)
 	
-	cv2.waitKey(0)
 	
-	final = process(corrected)
+	# Final image, with empty variable for the returned contour value (not needed right now)
+	final, _ = process(corrected)
+	
+	#cv2.imshow("final", final)
+	
+	cv2.waitKey(0)
 	
 	return final
 
@@ -790,7 +793,7 @@ def drawOver(image, reference):
 drawing = False
 
 # Pass original image, and processed image as reference
-processed = drawOver(plantImg, processed)
+processed = drawOver(plantImg, processed, pContours)
 
 cv2.imshow("redrawn", processed)	
 
