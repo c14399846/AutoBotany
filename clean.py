@@ -6,8 +6,10 @@ from matplotlib import image as image
 import easygui
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-lower_green = (30,60,60) 			# Lower plant Colourspace (HSV)
-upper_green = (80,255,255) 			# Upper plant Colourspace (HSV)
+lower_green = (30,60,60) # Original, some patches, little 'Noise'
+#lower_green = (30,60,50) # Decent detection, catches more 'Noise'
+#lower_green = (30,60,40)  # Less pathches, more 'Noise' # Lower plant Colourspace (HSV)
+upper_green = (80,255,255) 								# Upper plant Colourspace (HSV)
 
 
 
@@ -229,7 +231,7 @@ def getContours(plant, edge):
 		cropped = baseImg[y-5:y+h+5, x-5:x+w+5]
 		cv2.imshow("cropped", cropped)
 
-		cv2.waitKey(0)
+		#cv2.waitKey(0)
 		
 		# Other kind of Contouring
 		#epsilon = 0.01*cv2.arcLength(contoursEdge[i],True)
@@ -249,6 +251,40 @@ def process(plantOrig):
 	processedImages = [] # Array of processed images
 	count = 0 			 # Integer that holds number of images processed + saved
 	
+	
+	
+	
+	#################################################################
+	# TEST CODE #
+	
+	#lower_green = (30,60,60)
+	#upper_green = (80,255,255)
+	
+	kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
+	kernelVerySharp = np.array( [[ -1, -1, -1], [ -1, 9, -1], [ -1, -1, -1]], dtype = float)
+
+	sharpOrig = cv2.filter2D(plantOrig, ddepth = -1, kernel = kernelSharp)
+	cv2.imshow("sharpOrig", sharpOrig)
+	
+	# Has interesting seperation of Colours,
+	# Need to get good ranges for it
+	YUV = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YUV)
+	cv2.imshow("YUV", YUV)
+	
+	sharpenYUV = cv2.filter2D(YUV, ddepth = -1, kernel = kernelSharp)
+	cv2.imshow("sharpenYUV", sharpenYUV)
+	
+	LAB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2LAB)
+	cv2.imshow("LAB", LAB)
+	
+	sharpenLAB = cv2.filter2D(LAB, ddepth = -1, kernel = kernelSharp)
+	cv2.imshow("sharpenLAB", sharpenLAB)
+	
+	# END TEST CODE #
+	#################################################################
+	
+	
+	
 
 	# Converts image to HSV colourspace
 	# Gets colours in a certain range
@@ -259,9 +295,11 @@ def process(plantOrig):
 		processedImages[count].append(hsvrange)
 		processedImages[count].append("hsvrange")
 		count += 1
-	#cv2.imshow("hsv", hsv)
+	cv2.imshow("hsv", hsv)
 	#cv2.imshow("hsvrange", hsvrange)
 
+	sharpenHSV = cv2.filter2D(hsv, ddepth = -1, kernel = kernelSharp)
+	cv2.imshow("sharpenHSV", sharpenHSV)
 	
 	# Applies filters to blend colours
 	# *Might* make plant extraction easier (for edges / contours)
@@ -320,7 +358,7 @@ def process(plantOrig):
 		processedImages[count].append(origImgLoc)
 		processedImages[count].append("origImgLoc")
 		count += 1
-	#cv2.imshow("origImgLoc", origImgLoc)
+	cv2.imshow("origImgLoc", origImgLoc)
 	
 	
 	
@@ -351,6 +389,30 @@ def process(plantOrig):
 	cv2.imshow("filt", filteredImgLoc)
 	cv2.imshow("morph2", morph2)
 	'''
+	
+	
+	
+	# SHI-TOMASI
+	#
+	# Might want to make the points track per plant, rather than the whole image.
+	# The whole image parsing could possibly skip some of the plants in the image.
+	#
+	#
+	img = origImgLoc.copy()
+	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+
+	corners = cv2.goodFeaturesToTrack(gray,25,0.01,10)
+	corners = np.int0(corners)
+
+	for i in corners:
+		x,y = i.ravel()
+		cv2.circle(img,(x,y),3,255,-1)
+
+	#plt.imshow(img),plt.show()
+	
+	
+	
+	
 	
 	
 	# Gets Canny Edges of Plant Pixels
@@ -432,6 +494,7 @@ def process(plantOrig):
 		for i in range(count):
 			cv2.imshow(processedImages[i][1], processedImages[i][0])
 	cv2.waitKey(0)
+	
 
 
 # STARTS HERE
@@ -458,7 +521,7 @@ addcontourRes = True
 
 
 # Set bool to Show all images added to list
-showAll = True
+showAll = False
 
 # Number of plants in image (Can be defined by user later on)
 numberPlants = 2
@@ -485,8 +548,199 @@ cv2.imshow("plantImg", plantImg)
 # Processing pipeline
 process(plantImg)
 	
+
 	
+gray = convertBGRGray(plantImg)
+cv2.imshow("gray", gray)
+	
+'''
+TEST CODE FOR DRAWING ON IMAGES
+FROM LABS WEEK 2_2
+
+'''
+	
+def draw(event,x,y,flags,param): 
+	if event == cv2.EVENT_LBUTTONDOWN:
+		X1 = x-100
+		X2 = x+100
+		
+		Y1 = y-100
+		Y2 = y+100
+		
+		print ('x1 ', X1)
+		print ('x2 ', X2)
+		print ('y1 ', Y1)
+		print ('y2 ', Y2)
+
+		if Y1 < 0:
+			Y1 = 0
+		if Y2 > size[0]:
+			Y2 = size[0]
+		
+		if X1 < 0:
+			X1 = 0
+		if X2 > size[1]:
+			X2 = size[1]
+		
+		I[Y1:Y2,X1:X2] = HSV[Y1:Y2,X1:X2]
+		
+		##This has issues doing the bottom and right sides correctly for osme reason*********
+		cv2.rectangle(img = I, 
+			pt1 = (X1,Y1), 
+			pt2 = (X2,Y2), 
+			color = (255,0,255), 
+			thickness = 5)
+		
+		cv2.imshow("image", I)
+	
+	
+	
+	
+#cv2.setMouseCallback("image", draw)
+
+
+
+
+
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+'''
+TEST CODE FOR DRAWING ON IMAGES
+# https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_gui/py_mouse_handling/py_mouse_handling.html
+'''
+
+drawHSV = plantImg.copy()
+
+drawing = False # true if mouse is pressed
+mode = True # if True, draw rectangle. Press 'm' to toggle to curve
+ix,iy = -1,-1
+
+# mouse callback function
+def draw_circle(event,x,y,flags,param):
+    global ix,iy,drawing,mode
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        drawing = True
+        ix,iy = x,y
+
+    elif event == cv2.EVENT_MOUSEMOVE:
+        if drawing == True:
+            if mode == True:
+                cv2.rectangle(drawHSV,(ix,iy),(x,y),(0,255,0),-1)
+            else:
+                cv2.circle(drawHSV,(x,y),5,(0,0,255),-1)
+
+    elif event == cv2.EVENT_LBUTTONUP:
+        drawing = False
+        if mode == True:
+            cv2.rectangle(drawHSV,(ix,iy),(x,y),(0,255,0),-1)
+        else:
+            cv2.circle(drawHSV,(x,y),5,(0,0,255),-1)
+
+	
+#img = np.zeros((512,512,3), np.uint8)
+cv2.namedWindow('drawHSV')
+cv2.setMouseCallback('drawHSV',draw_circle)
+
+while(1):
+    cv2.imshow('drawHSV',drawHSV)
+    k = cv2.waitKey(1) & 0xFF
+    if k == ord('m'):
+        mode = not mode
+    elif k == 27:
+        break
 	
 
 
+cv2.destroyAllWindows()
+cv2.waitKey(0)
+
+	
+	
+'''
+TEST CODE
+# GETS THE ROI FROM DRAG AND DROP MOUSE CLICKS
+# https://www.pyimagesearch.com/2015/03/09/capturing-mouse-click-events-with-python-and-opencv/
+
+'''	
+
+
+# import the necessary packages
+import argparse
+import cv2
+
+# initialize the list of reference points and boolean indicating
+# whether cropping is being performed or not
+refPt = []
+cropping = False
+
+def click_and_crop(event, x, y, flags, param):
+	# grab references to the global variables
+	global refPt, cropping
+
+	# if the left mouse button was clicked, record the starting
+	# (x, y) coordinates and indicate that cropping is being
+	# performed
+	if event == cv2.EVENT_LBUTTONDOWN:
+		refPt = [(x, y)]
+		cropping = True
+
+	# check to see if the left mouse button was released
+	elif event == cv2.EVENT_LBUTTONUP:
+		# record the ending (x, y) coordinates and indicate that
+		# the cropping operation is finished
+		refPt.append((x, y))
+		cropping = False
+
+		# draw a rectangle around the region of interest
+		cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
+		cv2.imshow("image", image)
+
+
+ 
+# load the image, clone it, and setup the mouse callback function
+image = plantImg #cv2.imread(args["image"])
+clone = image.copy()
+cv2.namedWindow("image")
+cv2.setMouseCallback("image", click_and_crop)
+ 
+# keep looping until the 'q' key is pressed
+while True:
+	# display the image and wait for a keypress
+	cv2.imshow("image", image)
+	key = cv2.waitKey(1) & 0xFF
+ 
+	# if the 'r' key is pressed, reset the cropping region
+	if key == ord("r"):
+		image = clone.copy()
+ 
+	# if the 'c' key is pressed, break from the loop
+	elif key == ord("c"):
+		break
+ 
+# if there are two reference points, then crop the region of interest
+# from teh image and display it
+if len(refPt) == 2:
+	roi = clone[refPt[0][1]:refPt[1][1], refPt[0][0]:refPt[1][0]]
+	cv2.imshow("ROI", roi)
+	cv2.waitKey(0)
+ 
+# close all open windows
+cv2.destroyAllWindows()		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 cv2.waitKey(0)
