@@ -494,7 +494,7 @@ def process(plantOrig):
 			cv2.imshow(processedImages[i][1], processedImages[i][0])
 	cv2.waitKey(0)
 	
-
+	return contourRes
 
 # STARTS HERE
 # OPENS FILE / SOMEHOW GETS FILE
@@ -532,7 +532,7 @@ file = easygui.fileopenbox()
 plantImg = readInPlant(file)
 
 height, width = plantImg.shape[:2]
-resized = cv2.resize(plantImg,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
+#resized = cv2.resize(plantImg,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
 
 
 
@@ -545,19 +545,21 @@ cv2.imshow("plantImg", plantImg)
 
 
 # Processing pipeline
-process(plantImg)
-	
+processed = process(plantImg)
+cv2.imshow("processed", processed)
 
-	
-#gray = convertBGRGray(plantImg)
-#cv2.imshow("gray", gray)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+# Pass original iamge, and processed image as reference
+#processed = drawOver(plantImg, processed)
 	
 '''
 TEST CODE FOR DRAWING ON IMAGES
 FROM LABS WEEK 2_2
 
 '''
-	
+'''	
 def draw(event,x,y,flags,param): 
 	if event == cv2.EVENT_LBUTTONDOWN:
 		X1 = x-100
@@ -597,13 +599,12 @@ def draw(event,x,y,flags,param):
 	
 #cv2.setMouseCallback("image", draw)
 
+'''
 
 
 
 
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
 
 '''
 TEST CODE FOR DRAWING ON IMAGES
@@ -653,6 +654,149 @@ while(1):
 '''
 
 
+
+# Draw on Areas you want to add / remove from the plant image
+# Re-process to get ideal contours / features
+def drawOver(image, reference):
+
+	print ("\nPress 'a' to add area \n")
+	print ("Press 'r' to remove area \n")
+	print ("Press 'i' to increase brush, 'd' to decrease \n")
+
+	output = image
+	drawHSV = reference.copy()
+	height, width = output.shape[:2]
+	
+	
+	#cv2.imshow("Processed Image", reference)
+	#cv2.imshow("Original Image", image)
+	
+	imageRes = cv2.resize(image, (int(width/2), int(height/2)))
+	referenceRes = cv2.resize(reference, (int(width/2), int(height/2)))
+	combined = np.concatenate((imageRes, referenceRes), axis=0)
+
+	#combined = cv2.resize(combined, (width,height))
+	cv2.imshow("combined Image", combined)
+	
+	#drawing = False # true if mouse is pressed
+	ix,iy = -1,-1
+	cSize = 5 # Circle size for drawing
+	cColour = (0,0,255) # (255,0,0)
+
+	# Holds the drawing elements
+	tmpImg = np.zeros((height,width,3), np.uint8)
+	startedDrawing = False
+
+	# mouse callback function
+	def draw_circle_TEST(event,x,y,flags,param):
+		global ix,iy,drawing
+		
+		if event == cv2.EVENT_LBUTTONDOWN:
+			startedDrawing = True
+			drawing = True
+			ix,iy = x,y
+		
+		elif event == cv2.EVENT_MOUSEMOVE:
+			if drawing == True:
+				cv2.circle(drawHSV,(x,y),cSize,cColour,-1)
+				cv2.circle(tmpImg,(x,y),cSize,cColour,-1)
+		
+		elif event == cv2.EVENT_LBUTTONUP:
+			cv2.circle(drawHSV, (x,y), cSize, cColour, -1)
+			cv2.circle(tmpImg, (x,y), cSize, cColour, -1)
+			drawing = False
+
+	#img = np.zeros((512,512,3), np.uint8)
+	cv2.namedWindow('drawHSV')
+	cv2.setMouseCallback('drawHSV',draw_circle_TEST)
+
+
+
+	while(1):
+		cv2.imshow('drawHSV',drawHSV)
+		k = cv2.waitKey(1) & 0xFF
+		if k == 27:
+			break
+		
+		#if k == ord('i'):
+		#	cSize += 1
+		
+		#if k == ord('d'):
+		#	if(cSize >= 2):
+		#		cSize = cSize-1
+
+		if k == ord('i'):
+			cSize += 1
+		elif k == ord('d'):
+			if cSize >= 2:
+				cSize -= 1
+		
+		if k == ord('a'):
+			cColour = (255,0,0)
+		if k == ord('r'):
+			cColour = (0,0,255)
+		
+	cv2.destroyAllWindows()
+	cv2.waitKey(0)
+
+	#tmpGray = cv2.cvtColor(tmpImg,cv2.COLOR_BGR2GRAY)
+	#ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
+	#mask_inv = cv2.bitwise_not(mask)
+	
+	
+	
+	# THIS IS FIALING BECAUSE IM NOT MERGING THE IMAGES TOGETHER CORRECTLY ~12:25pm 20 Jan 2018
+	# STILL KINDA SORTA FAILING, 12:47pm 20 Jan 2018
+	
+	lowerB = (255, 0, 0)
+	higherB = (255, 0, 0)
+	
+	lowerR = (0, 0, 255)
+	higherR = (0, 0, 255)
+
+	# convert to HSV, then get range
+	#converted = cv2.cvtColor(tmpImg, cv2.COLOR_BGR2HSV)
+
+	#cv2.imshow("tmpImg", tmpImg)
+	#cv2.imshow("converted", converted)
+	
+	roiB = cv2.inRange(tmpImg, lowerB, higherB)
+	roiR = cv2.inRange(tmpImg, lowerR, higherR)
+	#cv2.imshow("roiB", roiB)
+	#cv2.imshow("roiR", roiR)
+	#cv2.imshow("output", output)
+	
+	corrected = cv2.bitwise_and(output, output, mask = roiB)
+	cv2.imshow("Corr B", corrected)
+	
+	mask_inv_b = cv2.bitwise_not(roiB)
+	mask_inv_r = cv2.bitwise_not(roiR)
+	#cv2.imshow("mask_inv B", mask_inv_b)
+	#cv2.imshow("mask_inv R", mask_inv_r)
+	
+	corrected = cv2.bitwise_or(output, output, mask = mask_inv_r)
+	cv2.imshow("Corr R", corrected)
+	
+	#corrected = cv2.bitwise_or(corrected, output, mask = roiR)
+	#cv2.imshow("Corr R", corrected)
+	
+	cv2.waitKey(0)
+	
+	final = process(corrected)
+	
+	return final
+
+# Global bool, because, reasons
+drawing = False
+
+# Pass original image, and processed image as reference
+processed = drawOver(plantImg, processed)
+
+cv2.imshow("redrawn", processed)	
+
+
+
+'''
 
 drawHSV = plantImg.copy()
 
@@ -721,7 +865,7 @@ mask_inv = cv2.bitwise_not(mask)
 #cv2.imshow("mask", mask)	
 cv2.imshow("mask_inv", mask_inv)	
 cv2.waitKey(0)
-
+'''
 
 
 
