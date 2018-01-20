@@ -229,8 +229,7 @@ def getContours(plant, edge):
 		
 		# Crops plant out of image, for later usage
 		cropped = baseImg[y-5:y+h+5, x-5:x+w+5]
-		cv2.imshow("cropped", cropped)
-
+		#cv2.imshow("cropped", cropped)
 		#cv2.waitKey(0)
 		
 		# Other kind of Contouring
@@ -264,21 +263,21 @@ def process(plantOrig):
 	kernelVerySharp = np.array( [[ -1, -1, -1], [ -1, 9, -1], [ -1, -1, -1]], dtype = float)
 
 	sharpOrig = cv2.filter2D(plantOrig, ddepth = -1, kernel = kernelSharp)
-	cv2.imshow("sharpOrig", sharpOrig)
+	#cv2.imshow("sharpOrig", sharpOrig)
 	
 	# Has interesting seperation of Colours,
 	# Need to get good ranges for it
 	YUV = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YUV)
-	cv2.imshow("YUV", YUV)
+	#cv2.imshow("YUV", YUV)
 	
 	sharpenYUV = cv2.filter2D(YUV, ddepth = -1, kernel = kernelSharp)
-	cv2.imshow("sharpenYUV", sharpenYUV)
+	#cv2.imshow("sharpenYUV", sharpenYUV)
 	
 	LAB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2LAB)
-	cv2.imshow("LAB", LAB)
+	#cv2.imshow("LAB", LAB)
 	
 	sharpenLAB = cv2.filter2D(LAB, ddepth = -1, kernel = kernelSharp)
-	cv2.imshow("sharpenLAB", sharpenLAB)
+	#cv2.imshow("sharpenLAB", sharpenLAB)
 	
 	# END TEST CODE #
 	#################################################################
@@ -295,11 +294,11 @@ def process(plantOrig):
 		processedImages[count].append(hsvrange)
 		processedImages[count].append("hsvrange")
 		count += 1
-	cv2.imshow("hsv", hsv)
+	#cv2.imshow("hsv", hsv)
 	#cv2.imshow("hsvrange", hsvrange)
 
 	sharpenHSV = cv2.filter2D(hsv, ddepth = -1, kernel = kernelSharp)
-	cv2.imshow("sharpenHSV", sharpenHSV)
+	#cv2.imshow("sharpenHSV", sharpenHSV)
 	
 	# Applies filters to blend colours
 	# *Might* make plant extraction easier (for edges / contours)
@@ -358,7 +357,7 @@ def process(plantOrig):
 		processedImages[count].append(origImgLoc)
 		processedImages[count].append("origImgLoc")
 		count += 1
-	cv2.imshow("origImgLoc", origImgLoc)
+	#cv2.imshow("origImgLoc", origImgLoc)
 	
 	
 	
@@ -550,8 +549,8 @@ process(plantImg)
 	
 
 	
-gray = convertBGRGray(plantImg)
-cv2.imshow("gray", gray)
+#gray = convertBGRGray(plantImg)
+#cv2.imshow("gray", gray)
 	
 '''
 TEST CODE FOR DRAWING ON IMAGES
@@ -610,7 +609,7 @@ cv2.destroyAllWindows()
 TEST CODE FOR DRAWING ON IMAGES
 # https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_gui/py_mouse_handling/py_mouse_handling.html
 '''
-
+'''
 drawHSV = plantImg.copy()
 
 drawing = False # true if mouse is pressed
@@ -651,14 +650,82 @@ while(1):
         mode = not mode
     elif k == 27:
         break
+'''
+
+
+
+drawHSV = plantImg.copy()
+
+drawing = False # true if mouse is pressed
+ix,iy = -1,-1
+cSize = 5 # Circle size for drawing
+
+
+# Holds the drawing elements
+tmpImg = np.zeros((height,width,3), np.uint8)
+startedDrawing = False
+
+# mouse callback function
+def draw_circle(event,x,y,flags,param):
+	global ix,iy,drawing
 	
+	if event == cv2.EVENT_LBUTTONDOWN:
+		startedDrawing = True
+		drawing = True
+		ix,iy = x,y
+	
+	elif event == cv2.EVENT_MOUSEMOVE:
+		if drawing == True:
+			cv2.circle(drawHSV,(x,y),cSize,(0,0,255),-1)
+			cv2.circle(tmpImg,(x,y),cSize,(0,0,255),-1)
+	
+	elif event == cv2.EVENT_LBUTTONUP:
+		cv2.circle(drawHSV, (x,y), cSize, (0, 0, 255), -1)
+		cv2.circle(tmpImg, (x,y), cSize, (0, 0, 255), -1)
+		drawing = False
+
+#img = np.zeros((512,512,3), np.uint8)
+cv2.namedWindow('drawHSV')
+cv2.setMouseCallback('drawHSV',draw_circle)
 
 
+
+while(1):
+    cv2.imshow('drawHSV',drawHSV)
+    k = cv2.waitKey(1) & 0xFF
+    if k == 27:
+        break
+	
+	#if k == ord('i'):
+	#	cSize += 1
+	
+	#if k == ord('d'):
+	#	if(cSize >= 2):
+	#		cSize = cSize-1
+
+    if k == ord('i'):
+        cSize += 1
+    elif k == ord('d'):
+        if cSize >= 2:
+            cSize -= 1
+	
 cv2.destroyAllWindows()
 cv2.waitKey(0)
 
-	
-	
+tmpGray = cv2.cvtColor(tmpImg,cv2.COLOR_BGR2GRAY)
+ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
+mask_inv = cv2.bitwise_not(mask)
+
+
+#cv2.imshow("tmpImg", tmpImg)
+#cv2.imshow("mask", mask)	
+cv2.imshow("mask_inv", mask_inv)	
+cv2.waitKey(0)
+
+
+
+
+
 '''
 TEST CODE
 # GETS THE ROI FROM DRAG AND DROP MOUSE CLICKS
@@ -667,10 +734,7 @@ TEST CODE
 '''	
 
 
-# import the necessary packages
-import argparse
-import cv2
-
+'''
 # initialize the list of reference points and boolean indicating
 # whether cropping is being performed or not
 refPt = []
@@ -731,7 +795,7 @@ if len(refPt) == 2:
 cv2.destroyAllWindows()		
 		
 		
-		
+'''	
 		
 		
 		
