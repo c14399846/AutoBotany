@@ -78,11 +78,11 @@ def getPlantLocation(image, range):
 
 
 # Merge Plant Locations
-def mergePlantLocations(image1, image2):
+def mergeImages(image1, image2):
 	
-	mergedPlants = cv2.addWeighted(image1, 0.5, image2, 0.5, 0)
+	mergedImages = cv2.addWeighted(image1, 0.5, image2, 0.5, 0)
 	
-	return mergedPlants	
+	return mergedImages
 	
 	
 
@@ -125,9 +125,9 @@ def applyCLAHE(image):
 # Merge Colour channels
 def mergeColourspace(first, second, third):
 
-	merged = cv2.merge((first, second, third))
+	mergedColours = cv2.merge((first, second, third))
 
-	return merged
+	return mergedColours
 
 
 
@@ -380,7 +380,7 @@ def process(plantOrig):
 	#cv2.imshow("filteredImgLoc", filteredImgLoc)
 	
 	
-	mergedPlantAreas = mergePlantLocations(origImgLoc, filteredImgLoc)
+	mergedPlantAreas = mergeImages(origImgLoc, filteredImgLoc)
 	
 	
 	# It has an interesting result, might look at later
@@ -670,52 +670,227 @@ while(1):
 # Re-process to get ideal contours / features
 def drawOver(image, reference, contours):
 
+	#cv2.imshow(" Image", image)
+	#cv2.imshow("reference Image", reference)
+	#cv2.imshow("contours Image", contours)
+
+
+
+
+
+
 	print ("\nPress 'a' to add area \n")
 	print ("Press 'r' to remove area \n")
 	print ("Press 'i' to increase brush, 'd' to decrease \n")
 
+	lowerB = (255, 0, 0)
+	higherB = (255, 0, 0)
+	
+	lowerR = (0, 0, 255)
+	higherR = (0, 0, 255)
+	
 	output = image
 	drawHSV = reference.copy()
 	height, width = output.shape[:2]
+
+
 	
 	imageRes = cv2.resize(image, (int(width/2), int(height/2)))
 	referenceRes = cv2.resize(reference, (int(width/2), int(height/2)))
 	combined = np.concatenate((imageRes, referenceRes), axis=0)
 
 	#combined = cv2.resize(combined, (width,height))
-	cv2.imshow("combined Image", combined)
+	#cv2.imshow("combined Image", combined)
 	
 	#drawing = False # true if mouse is pressed
 	ix,iy = -1, -1
 	cSize = 5 # Circle size for drawing
-	cColour = (0,0,255) # (255,0,0)
+	rWidth = 5
+	rHeight = 5
+	
+	
+	#cColour = (0,0,255) # (255,0,0)
+	whiteColour = (255,255,255) # (255,0,0)
+	blackColour = (0,0,0) # (255,0,0)
 
 	# Holds the drawing elements
-	tmpImg = np.zeros((height,width,3), np.uint8)
-	startedDrawing = False
+	tmpImg = np.ones((height,width,3), np.uint8)
+	#startedDrawing = False
 
 	# mouse callback function
 	def draw_circle_TEST(event,x,y,flags,param):
 		global ix,iy,drawing
 		
+		
 		if event == cv2.EVENT_LBUTTONDOWN:
-			startedDrawing = True
+			#startedDrawing = True
 			drawing = True
 			ix,iy = x,y
 		
 		elif event == cv2.EVENT_MOUSEMOVE:
 			if drawing == True:
-				cv2.circle(drawHSV,(x,y),cSize,cColour,-1)
-				cv2.circle(tmpImg,(x,y),cSize,cColour,-1)
+			
+				X1 = x-rWidth
+				X2 = x+rWidth
+				
+				Y1 = y-rHeight
+				Y2 = y+rHeight
+				
+				if adding:
+					#print ("add")
+					
+					cv2.rectangle(img = drawHSV, 
+						pt1 = (X1,Y1), 
+						pt2 = (X2,Y2), 
+						color = (255,0,0), 
+						thickness = 5)
+					
+					tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
+					
+				elif not adding:
+					#print ("remove")
+					
+					cv2.rectangle(img = drawHSV, 
+						pt1 = (X1,Y1), 
+						pt2 = (X2,Y2), 
+						color = (0,0,255), 
+						thickness = 5)
+					
+					cv2.rectangle(img = tmpImg, 
+						pt1 = (X1,Y1), 
+						pt2 = (X2,Y2), 
+						color = blackColour, 
+						thickness = 5)
+			
+				#cv2.circle(drawHSV,(x,y),cSize,cColour,-1)
+				#cv2.circle(tmpImg,(x,y),cSize,blackColour,-1)
+				#cv2.ellipse(tmpImg,(x,y),(cSize,cSize),0,0,360,255,-1)
+				#ell = cv2.ellipse(tmpImg,(x,y),(cSize,cSize),0,0,360,255, -1)
 		
+				#print (ell.shape)
+				
 		elif event == cv2.EVENT_LBUTTONUP:
-			cv2.circle(drawHSV, (x,y), cSize, cColour, -1)
-			cv2.circle(tmpImg, (x,y), cSize, cColour, -1)
+			X1 = x-rWidth
+			X2 = x+rWidth
+			
+			Y1 = y-rHeight
+			Y2 = y+rHeight
+			
+			if adding:
+				#print ("add")
+				#cColour = (255,0,0)
+				
+				cv2.rectangle(img = drawHSV, 
+					pt1 = (X1,Y1), 
+					pt2 = (X2,Y2), 
+					color = (255,0,0), 
+					thickness = 5)
+				
+				tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
+					
+			elif not adding:
+				#print ("remove")
+			
+				#cColour = (0,0,255)			
+			
+				cv2.rectangle(img = drawHSV, 
+					pt1 = (X1,Y1), 
+					pt2 = (X2,Y2), 
+					color = (0,0,255), 
+					thickness = 5)
+					
+				cv2.rectangle(img = tmpImg, 
+					pt1 = (X1,Y1), 
+					pt2 = (X2,Y2), 
+					color = blackColour, 
+					thickness = 5)
+			
+			#tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
+			#cv2.circle(drawHSV, (x,y), cSize, cColour, -1)
+			#cv2.circle(tmpImg, (x,y), cSize, blackColour, -1)
 			drawing = False
 
-	cv2.namedWindow('drawHSV')
-	cv2.setMouseCallback('drawHSV',draw_circle_TEST)
+	
+	
+		'''
+			REALLY WONKY TEST CODE.
+			
+			TRYING TO DO LIVE UPPDATED CONTOURING.
+			
+			
+			# Can do more efficently, remove the range stuff, just set the baseimg circles to black or
+			# The original image pixel area.
+			#
+			# Show the user the updating image, but use a scratch image for processing changes.
+			#
+			
+		'''
+		
+		'''
+		roiB = cv2.inRange(tmpImg, lowerB, higherB)
+		roiR = cv2.inRange(tmpImg, lowerR, higherR)
+		
+		corrected = cv2.bitwise_and(output, output, mask = roiB)
+		
+		mask_inv_b = cv2.bitwise_not(roiB)
+		mask_inv_r = cv2.bitwise_not(roiR)
+		corrected = cv2.bitwise_or(output, output, mask = mask_inv_r)
+		'''
+		
+		
+		edgeImg = contours.copy()
+		baseImg = mergeImages(tmpImg.copy(), edgeImg)		
+		
+		edge = applyCanny(baseImg, 30, 200)
+		
+		cv2.imshow("baseImg", baseImg)
+		cv2.imshow("tmpImg", tmpImg)
+		
+		#cv2.waitKey(0)
+		
+		
+		# Finds contours (Have to be closed edges)
+		(_,contoursEdge,_) = cv2.findContours(edge, mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
 
+		# Find largest contours by Area (Have to be closed contours)
+		contoursEdge = sorted(contoursEdge, key = cv2.contourArea, reverse = True)
+
+		#cv2.imshow("edge", edge)
+		
+		#cv2.waitKey(0)
+		
+		for i in range(numberPlants):
+			
+			# Draw rectangles, with order of Contour size
+			
+			#place = i
+			#x,y,w,h = cv2.boundingRect(contoursEdge[i])
+			
+			
+			hull = cv2.convexHull(contoursEdge[i])
+			cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
+			img = cv2.drawContours(drawHSV, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
+			
+			#print ("success")
+
+		
+		'''
+		END WONKY TEST CODE
+		'''
+		#cv2.imshow('tmp', tmpImg)
+
+	
+	
+	
+	
+	
+	
+	adding = False
+		
+	cv2.namedWindow('drawHSV')
+	
+	# cColour is overwriting itself all the time
+	cv2.setMouseCallback('drawHSV',draw_circle_TEST)
 
 
 	while(1):
@@ -726,14 +901,21 @@ def drawOver(image, reference, contours):
 
 		if k == ord('i'):
 			cSize += 1
+			rWidth += 1
+			rHeight += 1
 		elif k == ord('d'):
 			if cSize >= 2:
 				cSize -= 1
+				rWidth += 1
+				rHeight += 1
 		
 		if k == ord('a'):
-			cColour = (255,0,0)
+			adding = True
+			#cColour = (255,0,0)
+			
 		if k == ord('r'):
-			cColour = (0,0,255)
+			adding = False
+			#cColour = (0,0,255)
 		
 	#cv2.destroyAllWindows()
 	#cv2.waitKey(0)
@@ -747,12 +929,16 @@ def drawOver(image, reference, contours):
 	# THIS IS FIALING BECAUSE IM NOT MERGING THE IMAGES TOGETHER CORRECTLY ~12:25pm 20 Jan 2018
 	# STILL KINDA SORTA FAILING, 12:47pm 20 Jan 2018
 	
+	'''
 	lowerB = (255, 0, 0)
 	higherB = (255, 0, 0)
 	
 	lowerR = (0, 0, 255)
 	higherR = (0, 0, 255)
-
+	
+	
+	
+	
 	# convert to HSV, then get range
 	#converted = cv2.cvtColor(tmpImg, cv2.COLOR_BGR2HSV)
 
@@ -766,7 +952,7 @@ def drawOver(image, reference, contours):
 	#cv2.imshow("output", output)
 	
 	corrected = cv2.bitwise_and(output, output, mask = roiB)
-	cv2.imshow("Corr B", corrected)
+	#cv2.imshow("Corr B", corrected)
 	
 	mask_inv_b = cv2.bitwise_not(roiB)
 	mask_inv_r = cv2.bitwise_not(roiR)
@@ -774,7 +960,7 @@ def drawOver(image, reference, contours):
 	#cv2.imshow("mask_inv R", mask_inv_r)
 	
 	corrected = cv2.bitwise_or(output, output, mask = mask_inv_r)
-	cv2.imshow("Corr R", corrected)
+	#cv2.imshow("Corr R", corrected)
 	
 	#corrected = cv2.bitwise_or(corrected, output, mask = roiR)
 	#cv2.imshow("Corr R", corrected)
@@ -785,9 +971,12 @@ def drawOver(image, reference, contours):
 	
 	#cv2.imshow("final", final)
 	
+	'''
+	
+	
 	cv2.waitKey(0)
 	
-	return final
+	return
 
 # Global bool, because, reasons
 drawing = False
