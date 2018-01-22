@@ -684,7 +684,7 @@ def drawOver(image, reference, contours):
 	lowerR = (0, 0, 255)
 	higherR = (0, 0, 255)
 	
-	output = image
+	output = image.copy()
 	drawHSV = reference.copy()
 	height, width = output.shape[:2]
 
@@ -707,8 +707,14 @@ def drawOver(image, reference, contours):
 
 	# Holds the drawing elements
 	tmpImg = np.ones((height,width,3), np.uint8)
+	#tmpImgBlack = np.ones((height,width,3), np.uint8)
+	tmpImgBlack = np.zeros((height,width,3), np.uint8)
+	tmpImgBlack[:,:] = (255,255,255)
+	
 	#startedDrawing = False
-
+	
+	
+	
 	# mouse callback function
 	def draw_circle_TEST(event,x,y,flags,param):
 		global ix,iy,drawing
@@ -748,7 +754,15 @@ def drawOver(image, reference, contours):
 						color = (0,0,255), 
 						thickness = -1)
 					'''
+					'''
 					cv2.rectangle(img = tmpImg, 
+						pt1 = (X1,Y1), 
+						pt2 = (X2,Y2), 
+						color = blackColour, 
+						thickness = -1)
+					'''
+
+					cv2.rectangle(img = tmpImgBlack, 
 						pt1 = (X1,Y1), 
 						pt2 = (X2,Y2), 
 						color = blackColour, 
@@ -791,11 +805,20 @@ def drawOver(image, reference, contours):
 					color = (0,0,255), 
 					thickness = -1)
 				'''
+				'''
 				cv2.rectangle(img = tmpImg, 
 					pt1 = (X1,Y1), 
 					pt2 = (X2,Y2), 
 					color = blackColour, 
 					thickness = -1)
+				'''
+				cv2.rectangle(img = tmpImgBlack, 
+					pt1 = (X1,Y1), 
+					pt2 = (X2,Y2), 
+					color = blackColour, 
+					thickness = -1)
+			
+			
 			
 			#tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
 			#cv2.circle(drawHSV, (x,y), cSize, cColour, -1)
@@ -839,17 +862,79 @@ def drawOver(image, reference, contours):
 		'''
 		
 		
+		
+		
+		
+		'''
+		JUST SAVE THE ADD AND REMOVE TO SEPERATE IMAGES
+		THEN PROCEED TO OVERLAY THEM IN DIFFERENT ORDERS
+		
+		# put contours over the added portions, then put removed over the contours portion
+		# This could work (Similar to extracting tmpImg pixels)
+		# https://stackoverflow.com/questions/14063070/overlay-a-smaller-image-on-a-larger-image-python-opencv
+		# Use this link, might help
+		
+		
+		
+		'''
+		
+		# TESTING NEW ORDER 13:40 22 Jan 2018
+		
+		# Colour portion
+		mGrayImg = mergeImages(tmpImg.copy(), contours.copy(), 0.5, 0.5)
+		tmpGray = cv2.cvtColor(mGrayImg,cv2.COLOR_BGR2GRAY)
+		
+		#tmpAll = tmpGray.copy()
+		
+		ret, mask = cv2.threshold(tmpGray, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV)
+		mask_inv = cv2.bitwise_not(mask)
+		
+		mImg = output
+		andMInv = cv2.bitwise_and(mImg, mImg, mask = mask_inv)
+		
+		
+		
+		# This is the contour + colour pixels
+		tmpAll = andMInv.copy()
+		#cv2.imshow("tmpAll", tmpAll)
+		
+		# Black portion
+		tmpBlackGray = cv2.cvtColor(tmpImgBlack,cv2.COLOR_BGR2GRAY)
+		retB, maskB = cv2.threshold(tmpBlackGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
+		maskB_inv = cv2.bitwise_not(maskB)
+		#andMInv = cv2.bitwise_and(mImg, mImg, mask = maskB_inv)
+		
+		
+		# **************************************************************************************************
+		#
+		# THIS ONE IS CLOSE 14:01 22 JAN 2018
+		# IT DOESNT WANT TO OVERWRITE WITH COLOUR THOUGH
+		# tmpAll is the issue, because of copy() and andMInv or w/e
+		andMAll = cv2.bitwise_and(tmpImgBlack, tmpImgBlack,dst = tmpAll, mask = maskB)
+		cv2.imshow("andMAll", andMAll)
+		#
+		# **************************************************************************************************
+		
+		#cv2.imshow("tmpBlackGray", tmpBlackGray)
+		#cv2.imshow("maskB", maskB) # white rectangles on black BG
+		#cv2.imshow("maskB_inv", maskB_inv) # black rectangles on white BG
+		
+		
+		
+		
+		
 		# Black is not covering the plant pixels
 		# Go back and think about the actual pizel gathering process I've made*********
 		# 22-Jan-2018 11:30am 
 		mGrayImg = mergeImages(tmpImg.copy(), contours.copy(), 0.5, 0.5)
-		cv2.imshow("tmpImg", tmpImg)
-		cv2.imshow("contours", contours)
-		cv2.imshow("mGrayImg", mGrayImg)
+		#cv2.imshow("tmpImg", tmpImg)
+		#cv2.imshow("contours", contours)
+		#cv2.imshow("mGrayImg", mGrayImg)
 		
 		
 		tmpGray = cv2.cvtColor(mGrayImg,cv2.COLOR_BGR2GRAY)
-		ret, mask = cv2.threshold(tmpGray, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV) 
+		ret, mask = cv2.threshold(tmpGray, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV)
+		#ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 1, type = cv2.THRESH_BINARY_INV) 
 		# 22 Jan 2018 11:07 better threshold
 		
 		# Orig threshold
@@ -866,19 +951,19 @@ def drawOver(image, reference, contours):
 		# output vs contours.copy()
 		
 		# Shows whole image and Removed portions
-		'''andM = cv2.bitwise_and(mImg, mImg, mask = mask)
+		andM = cv2.bitwise_and(mImg, mImg, mask = mask)
 		orM = cv2.bitwise_or(mImg, mImg, mask = mask)
-		cv2.imshow("andM", andM)
-		cv2.imshow("orM", orM)
-		'''
+		#cv2.imshow("andM", andM)
+		#cv2.imshow("orM", orM)
+		
 		
 		# Only shows added portions
 		# This one is good? I think?
-		'''andMInv = cv2.bitwise_and(mImg, mImg, mask = mask_inv)
+		andMInv = cv2.bitwise_and(mImg, mImg, mask = mask_inv)
 		orMInv = cv2.bitwise_or(mImg, mImg, mask = mask_inv)
-		cv2.imshow("andMInv", andMInv)
-		cv2.imshow("orMInv", orMInv)
-		'''
+		#cv2.imshow("andMInv", andMInv)
+		#cv2.imshow("orMInv", orMInv)
+		
 		
 		
 		# THIS THING IS NOT BEING CORRECLT OVERWRITTEN
