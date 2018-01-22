@@ -702,8 +702,8 @@ def drawOver(image, reference, contours):
 	
 	
 	#cColour = (0,0,255) # (255,0,0)
-	#whiteColour = (255,255,255) # (255,0,0)
-	blackColour = (0,0,0) # (255,0,0)
+	whiteColour = (255,255,255) 
+	blackColour = (0,0,0) 
 
 	# Holds the drawing elements
 	tmpImg = np.ones((height,width,3), np.uint8)
@@ -741,6 +741,12 @@ def drawOver(image, reference, contours):
 						pt1 = (X1,Y1), 
 						pt2 = (X2,Y2), 
 						color = (255,0,0), 
+						thickness = -1)
+					
+					cv2.rectangle(img = tmpImgBlack, 
+						pt1 = (X1,Y1), 
+						pt2 = (X2,Y2), 
+						color = whiteColour, 
 						thickness = -1)
 					
 					tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
@@ -790,6 +796,12 @@ def drawOver(image, reference, contours):
 					pt1 = (X1,Y1), 
 					pt2 = (X2,Y2), 
 					color = (255,0,0), 
+					thickness = -1)
+				
+				cv2.rectangle(img = tmpImgBlack, 
+					pt1 = (X1,Y1), 
+					pt2 = (X2,Y2), 
+					color = whiteColour, 
 					thickness = -1)
 				
 				tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
@@ -891,7 +903,7 @@ def drawOver(image, reference, contours):
 		
 		mImg = output
 		andMInv = cv2.bitwise_and(mImg, mImg, mask = mask_inv)
-		
+		cv2.imshow("andMInv", andMInv)
 		
 		
 		# This is the contour + colour pixels
@@ -910,6 +922,17 @@ def drawOver(image, reference, contours):
 		# THIS ONE IS CLOSE 14:01 22 JAN 2018
 		# IT DOESNT WANT TO OVERWRITE WITH COLOUR THOUGH
 		# tmpAll is the issue, because of copy() and andMInv or w/e
+		
+		# 14:11 22 JAN 2018
+		
+		'''
+		
+		The issue is obvious
+		the black rects are not being removed or overwritten on, they are the last layer being placed onto the image stackoverflow
+			ergo: They can't have colour pixels placed on top of them
+		
+		'''
+		
 		andMAll = cv2.bitwise_and(tmpImgBlack, tmpImgBlack,dst = tmpAll, mask = maskB)
 		cv2.imshow("andMAll", andMAll)
 		#
