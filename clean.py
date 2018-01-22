@@ -720,6 +720,9 @@ def drawOver(image, reference, contours):
 		global ix,iy,drawing
 		
 		
+		holdingImg = image.copy()
+		
+		
 		if event == cv2.EVENT_LBUTTONDOWN:
 			#startedDrawing = True
 			drawing = True
@@ -1022,6 +1025,10 @@ def drawOver(image, reference, contours):
 		# SO THE RESULTS ARE SCREWED UP
 		#
 		
+		
+		# USED TO GET CANNY EDGES***********************
+		baseImg = andMAll
+		
 		edge = applyCanny(baseImg, 30, 200)
 
 		#cv2.imshow("baseImg", baseImg)
@@ -1048,6 +1055,9 @@ def drawOver(image, reference, contours):
 		
 		
 		'''
+		
+		cv2.imshow('holdingImg', holdingImg)
+		
 		for i in range(numberPlants):
 			
 			# Draw rectangles, with order of Contour size
@@ -1060,9 +1070,16 @@ def drawOver(image, reference, contours):
 			cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
 			img = cv2.drawContours(drawHSV, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
 			
+			
+			# TESTING UPDATED CONTOURS
+			img2 = cv2.drawContours(holdingImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
+			
 			#print ("success")
 
-		
+		#********************************************
+		# TESTING OUT UPDATED CONTOURS
+		# THEY SUCK. 20:30 22-JAN-2018
+		cv2.imshow('holdingImg2', holdingImg)
 		'''
 		END WONKY TEST CODE
 		'''
