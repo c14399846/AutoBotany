@@ -1056,7 +1056,7 @@ def drawOver(image, reference, contours):
 		
 		'''
 		
-		cv2.imshow('holdingImg', holdingImg)
+		cv2.imshow('edge', edge)
 		
 		for i in range(numberPlants):
 			
@@ -1067,7 +1067,7 @@ def drawOver(image, reference, contours):
 			
 			
 			hull = cv2.convexHull(contoursEdge[i])
-			cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
+			#cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
 			img = cv2.drawContours(drawHSV, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
 			
 			
@@ -1080,6 +1080,7 @@ def drawOver(image, reference, contours):
 		# TESTING OUT UPDATED CONTOURS
 		# THEY SUCK. 20:30 22-JAN-2018
 		cv2.imshow('holdingImg2', holdingImg)
+		cv2.imshow('baseImgPoly ', baseImg)
 		'''
 		END WONKY TEST CODE
 		'''
@@ -1112,8 +1113,8 @@ def drawOver(image, reference, contours):
 		elif k == ord('d'):
 			if cSize >= 2:
 				cSize -= 1
-				rWidth += 1
-				rHeight += 1
+				rWidth -= 1
+				rHeight -= 1
 		
 		if k == ord('a'):
 			adding = True
@@ -1182,7 +1183,7 @@ def drawOver(image, reference, contours):
 	
 	cv2.waitKey(0)
 	
-	return
+	return drawHSV
 
 # Global bool, because, reasons
 drawing = False
