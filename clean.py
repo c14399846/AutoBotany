@@ -1075,7 +1075,7 @@ def drawOver(image, reference, contours):
 	
 	
 	adding = False
-		
+	
 	cv2.namedWindow('drawHSV')
 	
 	# cColour is overwriting itself all the time
