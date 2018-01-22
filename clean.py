@@ -674,11 +674,6 @@ def drawOver(image, reference, contours):
 	#cv2.imshow("reference Image", reference)
 	#cv2.imshow("contours Image", contours)
 
-
-
-
-
-
 	print ("\nPress 'a' to add area \n")
 	print ("Press 'r' to remove area \n")
 	print ("Press 'i' to increase brush, 'd' to decrease \n")
@@ -693,12 +688,9 @@ def drawOver(image, reference, contours):
 	drawHSV = reference.copy()
 	height, width = output.shape[:2]
 
-
-	
-	imageRes = cv2.resize(image, (int(width/2), int(height/2)))
-	referenceRes = cv2.resize(reference, (int(width/2), int(height/2)))
-	combined = np.concatenate((imageRes, referenceRes), axis=0)
-
+	#imageRes = cv2.resize(image, (int(width/2), int(height/2)))
+	#referenceRes = cv2.resize(reference, (int(width/2), int(height/2)))
+	#combined = np.concatenate((imageRes, referenceRes), axis=0)
 	#combined = cv2.resize(combined, (width,height))
 	#cv2.imshow("combined Image", combined)
 	
@@ -710,7 +702,7 @@ def drawOver(image, reference, contours):
 	
 	
 	#cColour = (0,0,255) # (255,0,0)
-	whiteColour = (255,255,255) # (255,0,0)
+	#whiteColour = (255,255,255) # (255,0,0)
 	blackColour = (0,0,0) # (255,0,0)
 
 	# Holds the drawing elements
@@ -749,13 +741,13 @@ def drawOver(image, reference, contours):
 					
 				elif not adding:
 					#print ("remove")
-					
+					'''
 					cv2.rectangle(img = drawHSV, 
 						pt1 = (X1,Y1), 
 						pt2 = (X2,Y2), 
 						color = (0,0,255), 
 						thickness = -1)
-					
+					'''
 					cv2.rectangle(img = tmpImg, 
 						pt1 = (X1,Y1), 
 						pt2 = (X2,Y2), 
@@ -793,12 +785,12 @@ def drawOver(image, reference, contours):
 			
 				#cColour = (0,0,255)			
 			
-				cv2.rectangle(img = drawHSV, 
+				'''cv2.rectangle(img = drawHSV, 
 					pt1 = (X1,Y1), 
 					pt2 = (X2,Y2), 
 					color = (0,0,255), 
 					thickness = -1)
-					
+				'''
 				cv2.rectangle(img = tmpImg, 
 					pt1 = (X1,Y1), 
 					pt2 = (X2,Y2), 
@@ -838,15 +830,20 @@ def drawOver(image, reference, contours):
 		'''
 		
 		
-		edgeImg = contours.copy()
+		#edgeImg = contours.copy()
 		
-		baseImg = mergeImages(tmpImg.copy(), edgeImg, 0.1, 0.9)
-		baseImg2 = mergeImages(tmpImg.copy(), edgeImg, 0.3, 0.7)
-		baseImg3 = mergeImages(tmpImg.copy(), edgeImg, 0.5, 0.5)
-		baseImg4 = mergeImages(tmpImg.copy(), edgeImg, 0.7, 0.3)
-		baseImg5 = mergeImages(tmpImg.copy(), edgeImg, 0.9, 0.1)
 		
-		edge = applyCanny(baseImg, 30, 200)
+		# THIS THING ISNOT BEING CORRECLT OVERWRITTEN
+		# BLACK COLOURING IS NOT WORKING
+		baseImg = mergeImages(tmpImg.copy(), contours.copy(), 0.5, 0.5)
+
+		
+		#baseImg = mergeImages(tmpImg.copy(), edgeImg, 0.1, 0.9)
+		#baseImg2 = mergeImages(tmpImg.copy(), edgeImg, 0.3, 0.7)
+		#baseImg3 = mergeImages(tmpImg.copy(), edgeImg, 0.5, 0.5)
+		#baseImg4 = mergeImages(tmpImg.copy(), edgeImg, 0.7, 0.3)
+		#baseImg5 = mergeImages(tmpImg.copy(), edgeImg, 0.9, 0.1)
+		
 		
 		'''
 		cv2.imshow("baseImg", baseImg)
@@ -855,20 +852,46 @@ def drawOver(image, reference, contours):
 		cv2.imshow("baseImg4", baseImg4)
 		cv2.imshow("baseImg5", baseImg5)'''
 		cv2.imshow("tmpImg", tmpImg)
+		cv2.imshow("contours", contours)
 		
 		#cv2.waitKey(0)
+		
+		
+		
+		# THIS IS WHY CONTOURS WERE NOT WORKING CORRECTLY************************
+		# IT WAS NOT GETTING MERGED AT ALL,
+		# JUST USING THE BASE CONTOURS COPY**************************************
+		# 
+		# CONTOUR USES 'baseImg' FOR GETTING POLYLINES, AND 'edge' FOR CANNY
+		# SO THE RESULTS ARE SCREWED UP
+		#
+		
+		edge = applyCanny(baseImg, 30, 200)
+
+		cv2.imshow("baseImg", baseImg)
+		cv2.imshow("edge", edge)
 		
 		
 		# Finds contours (Have to be closed edges)
 		(_,contoursEdge,_) = cv2.findContours(edge, mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
 
 		# Find largest contours by Area (Have to be closed contours)
-		contoursEdge = sorted(contoursEdge, key = cv2.contourArea, reverse = True)
-
-		#cv2.imshow("edge", edge)
+		contoursEdge = sorted(contoursEdge, key = cv2.contourArea, reverse = True)		
 		
-		#cv2.waitKey(0)
 		
+		
+		'''
+		
+		NEED TO PASS IN A TEMP IMAGE (NOT 'drawHSV')
+		
+		WHY?
+			BECAUSE IT DOESNT RESET THE CONTOURS,
+			IT ONLY DRAWS OVER THEM,
+			SO IT'S A MESS
+		
+		
+		
+		'''
 		for i in range(numberPlants):
 			
 			# Draw rectangles, with order of Contour size
