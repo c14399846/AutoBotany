@@ -838,15 +838,48 @@ def drawOver(image, reference, contours):
 		***************MY THRESHOLDING IS BORKED******************FIX MEEEEEEEEEE
 		'''
 		
-		tmpGray = cv2.cvtColor(tmpImg,cv2.COLOR_BGR2GRAY)
-		ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
+		
+		# Black is not covering the plant pixels
+		# Go back and think about the actual pizel gathering process I've made*********
+		# 22-Jan-2018 11:30am 
+		mGrayImg = mergeImages(tmpImg.copy(), contours.copy(), 0.5, 0.5)
+		cv2.imshow("tmpImg", tmpImg)
+		cv2.imshow("contours", contours)
+		cv2.imshow("mGrayImg", mGrayImg)
+		
+		
+		tmpGray = cv2.cvtColor(mGrayImg,cv2.COLOR_BGR2GRAY)
+		ret, mask = cv2.threshold(tmpGray, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV) 
+		# 22 Jan 2018 11:07 better threshold
+		
+		# Orig threshold
+		#ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
 		mask_inv = cv2.bitwise_not(mask)
 		#cv2.imshow("tmpGray", tmpGray)
-		cv2.imshow("mask", mask)
-		cv2.imshow("mask_inv", mask_inv)
+		#cv2.imshow("mask", mask)
+		#cv2.imshow("mask_inv", mask_inv)
 		
-		#andM = cv2.bitwise_and(output, output, mask = roiB)
-		#orM = cv2.bitwise_or(output, output, mask = mask_inv_r)
+		mImg = output
+		
+		#mImg = mergeImages(tmpImg.copy(), contours.copy(), 0.5, 0.5)
+		
+		# output vs contours.copy()
+		
+		# Shows whole image and Removed portions
+		'''andM = cv2.bitwise_and(mImg, mImg, mask = mask)
+		orM = cv2.bitwise_or(mImg, mImg, mask = mask)
+		cv2.imshow("andM", andM)
+		cv2.imshow("orM", orM)
+		'''
+		
+		# Only shows added portions
+		# This one is good? I think?
+		'''andMInv = cv2.bitwise_and(mImg, mImg, mask = mask_inv)
+		orMInv = cv2.bitwise_or(mImg, mImg, mask = mask_inv)
+		cv2.imshow("andMInv", andMInv)
+		cv2.imshow("orMInv", orMInv)
+		'''
+		
 		
 		# THIS THING IS NOT BEING CORRECLT OVERWRITTEN
 		# BLACK COLOURING IS NOT WORKING
