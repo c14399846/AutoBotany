@@ -78,9 +78,9 @@ def getPlantLocation(image, range):
 
 
 # Merge Plant Locations
-def mergeImages(image1, image2):
+def mergeImages(image1, image2, wgtImg1, wgtImg2):
 	
-	mergedImages = cv2.addWeighted(image1, 0.5, image2, 0.5, 0)
+	mergedImages = cv2.addWeighted(image1, wgtImg1, image2, wgtImg2, 0)
 	
 	return mergedImages
 	
@@ -380,7 +380,7 @@ def process(plantOrig):
 	#cv2.imshow("filteredImgLoc", filteredImgLoc)
 	
 	
-	mergedPlantAreas = mergeImages(origImgLoc, filteredImgLoc)
+	mergedPlantAreas = mergeImages(origImgLoc, filteredImgLoc, 0.5, 0.5)
 	
 	
 	# It has an interesting result, might look at later
@@ -743,7 +743,7 @@ def drawOver(image, reference, contours):
 						pt1 = (X1,Y1), 
 						pt2 = (X2,Y2), 
 						color = (255,0,0), 
-						thickness = 5)
+						thickness = -1)
 					
 					tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
 					
@@ -754,13 +754,13 @@ def drawOver(image, reference, contours):
 						pt1 = (X1,Y1), 
 						pt2 = (X2,Y2), 
 						color = (0,0,255), 
-						thickness = 5)
+						thickness = -1)
 					
 					cv2.rectangle(img = tmpImg, 
 						pt1 = (X1,Y1), 
 						pt2 = (X2,Y2), 
 						color = blackColour, 
-						thickness = 5)
+						thickness = -1)
 			
 				#cv2.circle(drawHSV,(x,y),cSize,cColour,-1)
 				#cv2.circle(tmpImg,(x,y),cSize,blackColour,-1)
@@ -784,10 +784,10 @@ def drawOver(image, reference, contours):
 					pt1 = (X1,Y1), 
 					pt2 = (X2,Y2), 
 					color = (255,0,0), 
-					thickness = 5)
+					thickness = -1)
 				
 				tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
-					
+				
 			elif not adding:
 				#print ("remove")
 			
@@ -797,13 +797,13 @@ def drawOver(image, reference, contours):
 					pt1 = (X1,Y1), 
 					pt2 = (X2,Y2), 
 					color = (0,0,255), 
-					thickness = 5)
+					thickness = -1)
 					
 				cv2.rectangle(img = tmpImg, 
 					pt1 = (X1,Y1), 
 					pt2 = (X2,Y2), 
 					color = blackColour, 
-					thickness = 5)
+					thickness = -1)
 			
 			#tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
 			#cv2.circle(drawHSV, (x,y), cSize, cColour, -1)
@@ -839,11 +839,21 @@ def drawOver(image, reference, contours):
 		
 		
 		edgeImg = contours.copy()
-		baseImg = mergeImages(tmpImg.copy(), edgeImg)		
+		
+		baseImg = mergeImages(tmpImg.copy(), edgeImg, 0.1, 0.9)
+		baseImg2 = mergeImages(tmpImg.copy(), edgeImg, 0.3, 0.7)
+		baseImg3 = mergeImages(tmpImg.copy(), edgeImg, 0.5, 0.5)
+		baseImg4 = mergeImages(tmpImg.copy(), edgeImg, 0.7, 0.3)
+		baseImg5 = mergeImages(tmpImg.copy(), edgeImg, 0.9, 0.1)
 		
 		edge = applyCanny(baseImg, 30, 200)
 		
+		'''
 		cv2.imshow("baseImg", baseImg)
+		cv2.imshow("baseImg2", baseImg2)
+		cv2.imshow("baseImg3", baseImg3)
+		cv2.imshow("baseImg4", baseImg4)
+		cv2.imshow("baseImg5", baseImg5)'''
 		cv2.imshow("tmpImg", tmpImg)
 		
 		#cv2.waitKey(0)
