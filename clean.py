@@ -832,10 +832,25 @@ def drawOver(image, reference, contours):
 		
 		#edgeImg = contours.copy()
 		
+		'''
+		'mask' is picking up the 'removing' rectangles, but not the addition ones
+		Show up as white squares in 'mask' imshow
+		***************MY THRESHOLDING IS BORKED******************FIX MEEEEEEEEEE
+		'''
 		
-		# THIS THING ISNOT BEING CORRECLT OVERWRITTEN
+		tmpGray = cv2.cvtColor(tmpImg,cv2.COLOR_BGR2GRAY)
+		ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
+		mask_inv = cv2.bitwise_not(mask)
+		#cv2.imshow("tmpGray", tmpGray)
+		cv2.imshow("mask", mask)
+		cv2.imshow("mask_inv", mask_inv)
+		
+		#andM = cv2.bitwise_and(output, output, mask = roiB)
+		#orM = cv2.bitwise_or(output, output, mask = mask_inv_r)
+		
+		# THIS THING IS NOT BEING CORRECLT OVERWRITTEN
 		# BLACK COLOURING IS NOT WORKING
-		baseImg = mergeImages(tmpImg.copy(), contours.copy(), 0.5, 0.5)
+		baseImg = mergeImages(tmpImg.copy(), contours.copy(), 1, 0)
 
 		
 		#baseImg = mergeImages(tmpImg.copy(), edgeImg, 0.1, 0.9)
@@ -851,8 +866,8 @@ def drawOver(image, reference, contours):
 		cv2.imshow("baseImg3", baseImg3)
 		cv2.imshow("baseImg4", baseImg4)
 		cv2.imshow("baseImg5", baseImg5)'''
-		cv2.imshow("tmpImg", tmpImg)
-		cv2.imshow("contours", contours)
+		#cv2.imshow("tmpImg", tmpImg)
+		#cv2.imshow("contours", contours)
 		
 		#cv2.waitKey(0)
 		
@@ -868,8 +883,8 @@ def drawOver(image, reference, contours):
 		
 		edge = applyCanny(baseImg, 30, 200)
 
-		cv2.imshow("baseImg", baseImg)
-		cv2.imshow("edge", edge)
+		#cv2.imshow("baseImg", baseImg)
+		#cv2.imshow("edge", edge)
 		
 		
 		# Finds contours (Have to be closed edges)
