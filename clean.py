@@ -716,6 +716,12 @@ def drawOver(image, reference, contours):
 	tmpImgBlack = np.zeros((height,width,3), np.uint8)
 	tmpImgBlack[:,:] = (255,255,255)
 	
+	
+	
+	tmpImgWhite = np.zeros((height,width,3), np.uint8)
+	tmpImgWhite[:,:] = (255,255,255)
+	
+	
 	#startedDrawing = False
 	
 	
@@ -942,7 +948,12 @@ def drawOver(image, reference, contours):
 		'''
 		
 		andMAll = cv2.bitwise_and(tmpImgBlack, tmpImgBlack,dst = tmpAll, mask = maskB)
-		cv2.imshow("andMAll", andMAll)
+		
+		#****************************************************************
+		#andWhiteAll = mergeImages(andMAll, tmpImgWhite, 0.5, 0.5)
+		#cv2.imshow("andWhiteAll", andWhiteAll)
+		
+		#cv2.imshow("andMAll", andMAll)
 		#
 		# **************************************************************************************************
 		
@@ -1061,7 +1072,7 @@ def drawOver(image, reference, contours):
 		
 		'''
 		
-		cv2.imshow('edge', edge)
+		#cv2.imshow('edge', edge)
 		
 		for i in range(numberPlants):
 			
@@ -1084,14 +1095,30 @@ def drawOver(image, reference, contours):
 		#********************************************
 		# TESTING OUT UPDATED CONTOURS
 		# THEY SUCK. 20:30 22-JAN-2018
-		cv2.imshow('holdingImg2', holdingImg)
-		cv2.imshow('baseImgPoly ', baseImg)
+		#cv2.imshow('holdingImg2', holdingImg)
+		#cv2.imshow('baseImgPoly ', baseImg)
 		'''
 		END WONKY TEST CODE
 		'''
 		#cv2.imshow('tmp', tmpImg)
 
-	
+		
+		#tmpImgWhite
+		tmpHSV = cv2.cvtColor(tmpAll,cv2.COLOR_BGR2GRAY)
+		retHSV, maskHSV = cv2.threshold(tmpHSV, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
+		
+		maskHSV_inv = cv2.bitwise_not(maskHSV)
+		tstHSV = cv2.bitwise_and(output, output, mask = maskHSV_inv)
+		#cv2.imshow("tstHSV", tstHSV)
+		
+		'''
+		maskB_inv = cv2.bitwise_not(maskB)
+		andMAll = cv2.bitwise_and(tmpImgBlack, tmpImgBlack,dst = tmpAll, mask = maskB)
+		cv2.imshow("andMAll", andMAll)
+		cv2.imshow("maskHSV", maskHSV)
+		'''
+		#tmpAll, output, 
+		#merge them with white transparency?
 	
 	
 	
