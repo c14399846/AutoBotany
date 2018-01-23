@@ -5,6 +5,11 @@ from matplotlib import pyplot as plt
 from matplotlib import image as image
 import easygui
 
+
+
+from DrawOver import DrawOver
+
+
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 lower_green = (30,60,60) # Original, some patches, little 'Noise'
 #lower_green = (30,60,50) # Decent detection, catches more 'Noise'
@@ -1190,6 +1195,9 @@ drawing = False
 
 # Pass original image, and processed image as reference
 processed = drawOver(plantImg, processed, pContours)
+
+#dOver = DrawOver(plantImg, processed, pContours, numberPlants)
+#processed = dOver.drawNew()
 
 cv2.imshow("redrawn", processed)	
 
