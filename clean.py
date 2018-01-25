@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from PIL import Image
+#from PIL import Image
 from matplotlib import pyplot as plt
 from matplotlib import image as image
 import easygui
@@ -22,7 +22,7 @@ upper_green = (80,255,255) 								# Upper plant Colourspace (HSV)
 # Read in plant image
 def readInPlant(imagePath):
 
-	plant = cv2.imread(imagePath)
+	plant = cv2.imread("PEA_16.png")
 
 	return plant
 
