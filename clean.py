@@ -283,15 +283,20 @@ def process(plantOrig):
 	# Has interesting seperation of Colours,
 	# Need to get good ranges for it
 	YUV = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YUV)
+	#cv2.imwrite("/images/yuv.png", YUV)
 	#cv2.imshow("YUV", YUV)
 	
 	sharpenYUV = cv2.filter2D(YUV, ddepth = -1, kernel = kernelSharp)
+	#cv2.imwrite("/images/sharpenyuv.png", sharpenYUV)
 	#cv2.imshow("sharpenYUV", sharpenYUV)
 	
+	
 	LAB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2LAB)
+	#cv2.imwrite("/images/lab.png", LAB)
 	#cv2.imshow("LAB", LAB)
 	
 	sharpenLAB = cv2.filter2D(LAB, ddepth = -1, kernel = kernelSharp)
+	#cv2.imwrite("/images/sharpenlab.png", sharpenLAB)
 	#cv2.imshow("sharpenLAB", sharpenLAB)
 	
 	# END TEST CODE #
@@ -309,6 +314,7 @@ def process(plantOrig):
 		processedImages[count].append(hsvrange)
 		processedImages[count].append("hsvrange")
 		count += 1
+	#cv2.imwrite("/images/hsv.png", hsv)
 	#cv2.imshow("hsv", hsv)
 	#cv2.imshow("hsvrange", hsvrange)
 
@@ -545,15 +551,12 @@ numberPlants = 2
 
 
 
-#file = easygui.fileopenbox()
-plantImg = cv2.imread("PEA_14.png")#readInPlant(file)
+file = easygui.fileopenbox()
+plantImg = readInPlant(file)
 
-hsv = = cv2.cvtColor(plantImg, cv2.COLOR_BGR2HSV)
 
-cv2.imwrite('final.png', hsv)
-sys.exit(0)
 
-#height, width = plantImg.shape[:2]
+height, width = plantImg.shape[:2]
 #resized = cv2.resize(plantImg,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
 
 
@@ -568,10 +571,11 @@ cv2.imshow("plantImg", plantImg)
 
 # Processing pipeline
 processed, pContours = process(plantImg)
-cv2.imshow("processed", processed)
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#cv2.imshow("processed", processed)
+
+#cv2.waitKey(0)
+#cv2.destroyAllWindows()
 
 # Pass original iamge, and processed image as reference
 #processed = drawOver(plantImg, processed)
@@ -1229,12 +1233,12 @@ drawing = False
 # Pass original image, and processed image as reference
 
 
-processed = drawOver(plantImg, processed, pContours)
+#processed = drawOver(plantImg, processed, pContours)
 
 #dOver = DrawOver(plantImg, processed, pContours, numberPlants)
 #processed = dOver.drawNew()
 
-cv2.imwrite('final.png', processed)
+cv2.imwrite('/images/final.png', processed)
 #cv2.imshow("redrawn", processed)	
 
 
@@ -1394,4 +1398,4 @@ cv2.destroyAllWindows()
 		
 		
 		
-cv2.waitKey(0)
+#cv2.waitKey(0)
