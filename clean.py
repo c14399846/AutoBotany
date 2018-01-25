@@ -552,7 +552,7 @@ height, width = plantImg.shape[:2]
 
 
 
-cv2.imshow("plantImg", plantImg)
+#cv2.imshow("plantImg", plantImg)
 
 
 
@@ -562,10 +562,10 @@ cv2.imshow("plantImg", plantImg)
 
 # Processing pipeline
 processed, pContours = process(plantImg)
-cv2.imshow("processed", processed)
+#cv2.imshow("processed", processed)
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#cv2.waitKey(0)
+#cv2.destroyAllWindows()
 
 # Pass original iamge, and processed image as reference
 #processed = drawOver(plantImg, processed)
@@ -1221,12 +1221,15 @@ def drawOver(image, reference, contours):
 drawing = False
 
 # Pass original image, and processed image as reference
-processed = drawOver(plantImg, processed, pContours)
+
+
+#processed = drawOver(plantImg, processed, pContours)
 
 #dOver = DrawOver(plantImg, processed, pContours, numberPlants)
 #processed = dOver.drawNew()
 
-cv2.imshow("redrawn", processed)	
+cv2.imwrite('final.png', processed)
+#cv2.imshow("redrawn", processed)	
 
 
 
@@ -1384,5 +1387,5 @@ cv2.destroyAllWindows()
 		
 		
 		
-		
-cv2.waitKey(0)
+	
+#cv2.waitKey(0)
