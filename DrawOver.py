@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from PIL import Image
+#from PIL import Image
 from matplotlib import pyplot as plt
 #from matplotlib import image as image
 import easygui

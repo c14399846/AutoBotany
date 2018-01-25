@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import cv2
 #from PIL import Image
@@ -22,7 +23,7 @@ upper_green = (80,255,255) 								# Upper plant Colourspace (HSV)
 # Read in plant image
 def readInPlant(imagePath):
 
-	plant = cv2.imread("PEA_16.png")
+	plant = cv2.imread(imagePath)
 
 	return plant
 
@@ -544,15 +545,20 @@ numberPlants = 2
 
 
 
-file = easygui.fileopenbox()
-plantImg = readInPlant(file)
+#file = easygui.fileopenbox()
+plantImg = cv2.imread("PEA_14.png")#readInPlant(file)
 
-height, width = plantImg.shape[:2]
+hsv = = cv2.cvtColor(plantImg, cv2.COLOR_BGR2HSV)
+
+cv2.imwrite('final.png', hsv)
+sys.exit(0)
+
+#height, width = plantImg.shape[:2]
 #resized = cv2.resize(plantImg,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
 
 
 
-#cv2.imshow("plantImg", plantImg)
+cv2.imshow("plantImg", plantImg)
 
 
 
@@ -562,10 +568,10 @@ height, width = plantImg.shape[:2]
 
 # Processing pipeline
 processed, pContours = process(plantImg)
-#cv2.imshow("processed", processed)
+cv2.imshow("processed", processed)
 
-#cv2.waitKey(0)
-#cv2.destroyAllWindows()
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
 # Pass original iamge, and processed image as reference
 #processed = drawOver(plantImg, processed)
@@ -1223,7 +1229,7 @@ drawing = False
 # Pass original image, and processed image as reference
 
 
-#processed = drawOver(plantImg, processed, pContours)
+processed = drawOver(plantImg, processed, pContours)
 
 #dOver = DrawOver(plantImg, processed, pContours, numberPlants)
 #processed = dOver.drawNew()
@@ -1387,5 +1393,5 @@ cv2.destroyAllWindows()
 		
 		
 		
-	
-#cv2.waitKey(0)
+		
+cv2.waitKey(0)
