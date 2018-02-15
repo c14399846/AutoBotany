@@ -10,6 +10,7 @@ var pyshell = new ps(scriptLoc);
 var imageExists = false;
 
 
+
 function nJSSucksAss(callback,path){
      fs.readFile(path,'utf-8', function(err, data){
         if(err) return callback(err);
@@ -17,8 +18,6 @@ function nJSSucksAss(callback,path){
 	callback(null,data);
         //console.log(textData);
       });
-
-
 }
 
 function pyTest(){
@@ -40,13 +39,14 @@ http.createServer(function (req, res) {
     var form = new formidable.IncomingForm();
     form.parse(req, function (err, fields, files) {
 	//console.log(files.fileupload);
-	//console.log(files.fileupload.name);
-	//console.log(files.fileupload.path);   
-	var oldPath = files.fileupload.path;
+	//console.log(files);
+	
+  
+	var oldPath = files.filetoupload.path;
 	//var newpath = upload_path + files.filetoupload.name;
 	var newPath = '/home/image/images/';
 
-      var filePath = newPath + files.fileupload.name;
+      var filePath = newPath + files.filetoupload.name;
 
       //var readPath = files.fileupload.path.toString();
       //var textData = nJSSucksAss(function(err, readPath){console.log(readPath);});
@@ -81,7 +81,7 @@ http.createServer(function (req, res) {
   } else {
     res.writeHead(200, {'Content-Type': 'text/html'});
     res.write('<form action="fileupload" method="post" enctype="multipart/form-data">');
-    res.write('<input type="file" name="fileupload"><br>');
+    res.write('<input type="file" name="filetoupload"><br>');
     res.write('<input type="submit">');
     res.write('</form>');
     return res.end();
