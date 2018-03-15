@@ -15,16 +15,20 @@ clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 lower_green = (30,60,60) # Original, some patches, little 'Noise'
 #lower_green = (30,60,50) # Decent detection, catches more 'Noise'
 #lower_green = (30,60,40)  # Less pathches, more 'Noise' # Lower plant Colourspace (HSV)
-upper_green = (80,255,255) 								# Upper plant Colourspace (HSV)
+upper_green = (80,255,255)	# Upper plant Colourspace (HSV)
+#upper_green = (80,255,190)	# Upper plant Colourspace (HSV)
 
 
 
 # This is the lower and upper ranges of the background
-lower_bg  = (20, 125, 200)
-upper_bg = (28, 200, 255)
+lower_bg  = (20, 70, 200)
+#upper_bg = (30, 200, 255)
+upper_bg = (33, 150, 255) # This one rmeoved a lot of crap, the plant look decent too
 
 lower_dirt = (20, 130, 25)
 upper_dirt = (30, 255, 115)
+#upper_dirt = (32, 255, 115) # These are good for removing dirt, and make a better contour too
+#upper_dirt = (33, 255, 115)
 
 
 lower_support = (19, 67, 70)
@@ -251,7 +255,7 @@ def getContours(plant, edge):
 		place = i
 		x,y,w,h = cv2.boundingRect(contoursEdge[i])
 		#cv2.rectangle(baseImg, (x,y), (x+w, y+h), (255,0,0), 2)
-		#cv2.putText(baseImg,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)
+		#cv2.putText(baseImg,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)		
 		
 		# Crops plant out of image, for later usage
 		#cropped = baseImg[y-5:y+h+5, x-5:x+w+5]
@@ -268,8 +272,15 @@ def getContours(plant, edge):
 		#cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
 		#img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
 		
-		baseImg = baseImg[y-5:y+h+5, x-5:x+w+5]
+		
 
+		# Cropping is here (If it works.....)
+		#baseImg = baseImg[y-5:y+h+5, x-5:x+w+5]
+		baseImg = baseImg[y:y+h, x:x+w]
+		
+		#cv2.imshow("baseImg", baseImg)
+		#cv2.waitKey(0)
+		
 	return baseImg
 
 
@@ -683,8 +694,7 @@ def process(plantOrig):
 		processedImages[count].append("contourRes")
 		count += 1
 	#cv2.imshow("contourRes", contourRes)
-
-	
+	#cv2.waitKey(0)
 	
 	
 	
@@ -720,10 +730,10 @@ def process(plantOrig):
 	# Get Width and Height data
 	
 	bgDirt = cv2.add(contImgLoc,dirtImgLoc)
-	#cv2.imshow("bgDirt", bgDirt)
+	cv2.imshow("bgDirt", bgDirt)
 	
 	allNonPlant = cv2.add(bgDirt,supportImgLoc)
-	#cv2.imshow("allNonPlant", allNonPlant)
+	cv2.imshow("allNonPlant", allNonPlant)
 	
 	grayNon = cv2.cvtColor(allNonPlant, cv2.COLOR_BGR2GRAY)
 	
@@ -740,19 +750,19 @@ def process(plantOrig):
 	
 	
 	cannyContAnd = applyCanny(contAnd, 30, 200)
-	cv2.imshow("cannyContAnd", cannyContAnd)
+	#cv2.imshow("cannyContAnd", cannyContAnd)
 	
 	
 	blur = cv2.GaussianBlur(contAnd.copy(),(5,5),0)
-	cv2.imshow("blur", blur)
+	#cv2.imshow("blur", blur)
 	blurContAnd = applyCanny(blur, 30, 200)
-	cv2.imshow("blurContAnd", blurContAnd)
+	#cv2.imshow("blurContAnd", blurContAnd)
 	
 	
 	
 	bilatCont = applyBilateralFilter(contAnd.copy(), 11, 17, 17)
 	bilatContAnd = applyCanny(bilatCont, 30, 200)
-	cv2.imshow("bilatContAnd", bilatContAnd)
+	#cv2.imshow("bilatContAnd", bilatContAnd)
 	
 	edgeHSV1 = cannyContAnd.copy()
 	#edgeHSV2 = bilatContAnd.copy()
@@ -916,13 +926,13 @@ numberPlants = 1
 
 
 #file = easygui.fileopenbox()
-plantImg = readInPlant("PEA_16.png")
+plantImg = readInPlant("PEA_10.png")
 #plantImg = readInPlant("plantqr.jpg")
 
 
 
 height, width = plantImg.shape[:2]
-#resized = cv2.resize(plantImg,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
+plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
 
 
 
