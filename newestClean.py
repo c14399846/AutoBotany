@@ -19,6 +19,17 @@ upper_green = (80,255,255) 								# Upper plant Colourspace (HSV)
 
 
 
+# This is the lower and upper ranges of the background
+lower_bg  = (20, 130, 200)
+upper_bg = (28, 200, 255)
+
+lower_dirt = (20, 130, 45)
+upper_dirt = (30, 200, 115)
+
+
+lower_support = (19, 67, 70)
+upper_support = (30, 252, 253)
+
 
 # Read in plant image
 def readInPlant(imagePath):
@@ -239,11 +250,11 @@ def getContours(plant, edge):
 		
 		place = i
 		x,y,w,h = cv2.boundingRect(contoursEdge[i])
-		#cv2.rectangle(baseImg, (x,y), (x+w, y+h), (0,255,0), 2)
+		#cv2.rectangle(baseImg, (x,y), (x+w, y+h), (255,0,0), 2)
 		#cv2.putText(baseImg,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)
 		
 		# Crops plant out of image, for later usage
-		cropped = baseImg[y-5:y+h+5, x-5:x+w+5]
+		#cropped = baseImg[y-5:y+h+5, x-5:x+w+5]
 		#cv2.imshow("cropped", cropped)
 		#cv2.waitKey(0)
 		
@@ -254,6 +265,8 @@ def getContours(plant, edge):
 		hull = cv2.convexHull(contoursEdge[i])
 		cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
 		img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
+		
+		baseImg = baseImg[y-5:y+h+5, x-5:x+w+5]
 
 	return baseImg
 	
@@ -267,10 +280,40 @@ def process(plantOrig):
 	
 	
 	
+	# GRABCUT TEST CRAP
+	# 12 mar 2018 11:41am
+	'''
+	img = plantOrig.copy()
+
+
+	mask = np.zeros(img.shape[:2],np.uint8)
+
+	bgdModel = np.zeros((1,65),np.float64)
+	fgdModel = np.zeros((1,65),np.float64)
+
+	# Using rectangle for extraction
+
+	rect = (685,414,1323,950)
+	cv2.grabCut(img,mask,rect,bgdModel,fgdModel,5,cv2.GC_INIT_WITH_RECT)
+
+	mask2 = np.where((mask==2)|(mask==0),0,1).astype('uint8')
+	img = img*mask2[:,:,np.newaxis]
+
+
+	plantOrig = img
+	'''
+	
+	# END GRABCUT TEST CRAP
+	
+	
+	
+	
+	
+	
+	
 	
 	#################################################################
 	# TEST CODE #
-	
 	#lower_green = (30,60,60)
 	#upper_green = (80,255,255)
 	
@@ -283,28 +326,41 @@ def process(plantOrig):
 	# Has interesting seperation of Colours,
 	# Need to get good ranges for it
 	YUV = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YUV)
-	cv2.imwrite("./images/yuv.png", YUV)
+	#cv2.imwrite("./images/yuv.png", YUV)
 	#cv2.imshow("YUV", YUV)
 	
 	sharpenYUV = cv2.filter2D(YUV, ddepth = -1, kernel = kernelSharp)
-	cv2.imwrite("./images/sharpenyuv.png", sharpenYUV)
+	#cv2.imwrite("./images/sharpenyuv.png", sharpenYUV)
 	#cv2.imshow("sharpenYUV", sharpenYUV)
 	
 	
 	LAB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2LAB)
-	cv2.imwrite("./images/lab.png", LAB)
+	#cv2.imwrite("./images/lab.png", LAB)
 	#cv2.imshow("LAB", LAB)
 	
 	sharpenLAB = cv2.filter2D(LAB, ddepth = -1, kernel = kernelSharp)
-	cv2.imwrite("./images/sharpenlab.png", sharpenLAB)
+	#cv2.imwrite("./images/sharpenlab.png", sharpenLAB)
 	#cv2.imshow("sharpenLAB", sharpenLAB)
+	
+	
+	YCB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YCrCb)
+	#cv2.imwrite("./images/ycb.png", YCB)
+	
+	
+	# whatever this is....
+	#imgYCC = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YCR_CB)
+	#cv2.imwrite("./images/ycc.png", imgYCC)
+	
+	sharpenYCB = cv2.filter2D(YCB, ddepth = -1, kernel = kernelSharp)
+	#cv2.imwrite("./images/sharpenycb.png", sharpenYCB)
+	#cv2.imshow("sharpenYCB", sharpenYCB)
+	
 	
 	# END TEST CODE #
 	#################################################################
-	
-	
-	
 
+	
+	
 	# Converts image to HSV colourspace
 	# Gets colours in a certain range
 	hsv = convertBGRHSV(plantOrig)
@@ -314,10 +370,23 @@ def process(plantOrig):
 		processedImages[count].append(hsvrange)
 		processedImages[count].append("hsvrange")
 		count += 1
-	cv2.imwrite("./images/hsv.png", hsv)
-	#cv2.imshow("hsv", hsv)
+	#cv2.imwrite("./images/hsv.png", hsv)
+	cv2.imshow("hsv", hsv)
 	#cv2.imshow("hsvrange", hsvrange)
 
+	
+	
+	
+	# Finds Plant Pixels matching the Mask
+	origImgLoc = getPlantLocation(plantOrig, hsvrange)
+	if(addorigImgLoc):
+		processedImages.append([])
+		processedImages[count].append(origImgLoc)
+		processedImages[count].append("origImgLoc")
+		count += 1
+	#cv2.imshow("origImgLoc", origImgLoc)
+	
+	
 	
 	sharpenHSV = cv2.filter2D(hsv, ddepth = -1, kernel = kernelSharp)
 	#cv2.imshow("sharpenHSV", sharpenHSV)
@@ -338,18 +407,6 @@ def process(plantOrig):
 	#cv2.imshow("addfilteredRange", addfilteredRange)
 	
 	
-	
-	# Finds Plant Pixels matching the Mask
-	origImgLoc = getPlantLocation(plantOrig, hsvrange)
-	if(addorigImgLoc):
-		processedImages.append([])
-		processedImages[count].append(origImgLoc)
-		processedImages[count].append("origImgLoc")
-		count += 1
-	#cv2.imshow("origImgLoc", origImgLoc)
-	
-	
-	
 	# Finds Plant Pixels matching the Filtered Mask
 	filteredImgLoc = getPlantLocation(plantOrig, filteredRange)
 	if(addfilteredImgLoc):
@@ -361,6 +418,7 @@ def process(plantOrig):
 	
 	
 	mergedPlantAreas = mergeImages(origImgLoc, filteredImgLoc, 0.5, 0.5)
+	#cv2.imshow("mergedPlantAreas", mergedPlantAreas)
 	
 	
 	# Gets Canny Edges of Plant Pixels
@@ -382,6 +440,191 @@ def process(plantOrig):
 		processedImages[count].append("edgeFilteredLoc")
 		count += 1
 	#cv2.imshow("edgeFilteredLoc", edgeFilteredLoc2)
+	
+	
+	
+	
+	
+	
+	
+	
+	####################################################################
+	# TEST CODE
+	
+	
+	edgeHSV = applyCanny(hsv, 30, 200)
+	edgeSharpenHSV = applyCanny(sharpenHSV, 30, 200)
+	
+	edgeYUV = applyCanny(YUV, 30, 200)
+	edgeSharpenYUV = applyCanny(sharpenYUV, 30, 200)
+	
+	edgeLAB = applyCanny(LAB, 30, 200)
+	edgeSharpenLAB = applyCanny(sharpenLAB, 30, 200)
+	
+	edgeYCB = applyCanny(YCB, 30, 200)
+	edgeSharpenYCB = applyCanny(sharpenYCB, 30, 200)
+	
+	#'''
+	#cv2.imshow("HSV", hsv)
+	#cv2.imshow("edgeHSV", edgeHSV)
+	#cv2.imshow("sharpenHSV", sharpenHSV)
+	#cv2.imshow("edgeSharpenHSV", edgeSharpenHSV)
+	#'''
+	
+	#'''
+	#cv2.imshow("YUV", YUV)
+	#cv2.imshow("edgeYUV", edgeYUV)
+	#cv2.imshow("sharpenYUV", sharpenYUV)
+	#cv2.imshow("edgeSharpenYUV", edgeSharpenYUV)
+	#'''
+	
+	#'''
+	#cv2.imshow("LAB", LAB)
+	#cv2.imshow("edgeLAB", edgeLAB)
+	#cv2.imshow("sharpenLAB", sharpenLAB)
+	#cv2.imshow("edgeSharpenLAB", edgeSharpenLAB)
+	#'''
+	
+	#'''
+	#cv2.imshow("YCB", YCB)
+	#cv2.imshow("edgeYCB", edgeYCB)
+	#cv2.imshow("sharpenYCB", sharpenYCB)
+	#cv2.imshow("edgeSharpenYCB", edgeSharpenYCB)
+	#'''
+	
+
+	yuvY = YUV[...,0]
+	yuvU = YUV[...,1]
+	yuvV = YUV[...,2]
+	
+	#cv2.imshow("yuvY", yuvY)
+	#cv2.imshow("yuvU", yuvU)
+	#cv2.imshow("yuvV", yuvV)
+	
+	#tmpGray = cv2.cvtColor(plantImg,cv2.COLOR_BGR2GRAY)
+	#cv2.imshow("tmpGray", tmpGray)
+	
+	
+	
+	
+	
+	# YCB
+	
+	# Original YCB, in grayscale outputs
+	ycbY = YCB[...,0]
+	ycbC = YCB[...,1]
+	ycbB = YCB[...,2]
+	
+	
+	copyRED_YCB = YCB.copy()
+	copyRED_YCB[:,:,0] = 0
+	copyRED_YCB[:,:,1] = 0
+	#cv2.imshow("copyRED_YCB", copyRED_YCB)
+	
+	copyGR_YCB = YCB.copy()
+	copyGR_YCB[:,:,0] = 0
+	copyGR_YCB[:,:,2] = 0
+	#cv2.imshow("copyGR_YCB", copyGR_YCB)
+	
+	copyBL_YCB = YCB.copy()
+	copyBL_YCB[:,:,1] = 0
+	copyBL_YCB[:,:,2] = 0
+	#cv2.imshow("copyBL_YCB", copyBL_YCB)
+	
+	# Trying to get colour representation of YCB colourspace
+	# It failed.
+	#ycbY = YCB[:,:,0]
+	#ycbC = YCB[:,:,1]
+	#ycbB = YCB[:,:,2]
+	
+	#cv2.imshow("ycbY", ycbY)
+	#cv2.imshow("ycbC", ycbC)
+	#cv2.imshow("ycbB", ycbB)
+	
+	
+	cpYCB = YCB.copy()
+	
+	cpYCB[:,:,0] = 0
+	#cpYCB[:,:,1] = 0
+	cpYCB[:,:,2] = 0
+	cpYCB_Y = cpYCB[...,0]
+	cpYCB_C = cpYCB[...,1]
+	cpYCB_B = cpYCB[...,2]
+	
+	ycb_image = cv2.merge([cpYCB_Y, cpYCB_C, cpYCB_B])
+	outYCB = cv2.cvtColor(ycb_image, cv2.COLOR_BGR2YCrCb)
+	cv2.imshow("outYCB", outYCB)
+	
+	
+	
+	
+	# LAB
+	
+	labL = LAB[...,0]
+	labA = LAB[...,1]
+	labB = LAB[...,2]
+	
+	#cv2.imshow("labL", labL)
+	#cv2.imshow("labA", labA)
+	#cv2.imshow("labB", labB)
+	
+	
+	cpLAB = LAB.copy()
+	
+	#cpLAB[:,:,0] = 0
+	cpLAB[:,:,1] = 0
+	cpLAB[:,:,2] = 0
+	cpL = cpLAB[...,0]
+	cpA = cpLAB[...,1]
+	cpB = cpLAB[...,2]
+	
+	lab_image = cv2.merge([cpL, cpA, cpB])
+	
+	outLAB = cv2.cvtColor(lab_image, cv2.COLOR_LAB2BGR)
+	cv2.imshow("outLAB", outLAB)
+	
+	
+	
+	
+	
+	# HSV
+	
+	copyRED_HSV = hsv.copy()
+	copyRED_HSV[:,:,0] = 0
+	copyRED_HSV[:,:,1] = 0
+	#cv2.imshow("copyRED_HSV", copyRED_YCB)
+	
+	copyGR_HSV = hsv.copy()
+	copyGR_HSV[:,:,0] = 0
+	copyGR_HSV[:,:,2] = 0
+	#cv2.imshow("copyGR_HSV", copyGR_HSV)
+	
+	copyBL_HSV = hsv.copy()
+	copyBL_HSV[:,:,1] = 0
+	copyBL_HSV[:,:,2] = 0
+	#cv2.imshow("copyBL_HSV", copyBL_HSV)
+	
+	
+	
+	cpHSV = hsv.copy()
+	
+	#cpHSV[:,:,0] = 0
+	cpHSV[:,:,1] = 0
+	#cpHSV[:,:,2] = 0
+	cpH = cpHSV[...,0]
+	cpS = cpHSV[...,1]
+	cpV = cpHSV[...,2]
+	
+	hsv_image = cv2.merge([cpH, cpS, cpV])
+	
+	#outHSV = cv2.cvtColor(hsv_image, cv2.COLOR_LAB2BGR) # FUCKING USED THIS BEFORE
+	outHSV = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
+	cv2.imshow("outHSV", outHSV)
+
+	# END TEST CODE
+	####################################################################
+
+	
 	
 	
 	
@@ -413,7 +656,65 @@ def process(plantOrig):
 		count += 1
 	#cv2.imshow("contourRes", contourRes)
 
+	
+	
+	
+	
+	# Background, support structures, and dirt pixels
+	
+	
+	contHSV = convertBGRHSV(contourRes.copy())
+	cv2.imshow("contHSV", contHSV)
+	contHSVRange = getColourRange(contHSV, lower_bg, upper_bg)
+	contImgLoc = getPlantLocation(contourRes.copy(), contHSVRange)
+	#cv2.imshow("contImgLoc", contImgLoc)
+	
+	
+	dirtHSV = contHSV.copy()
+	dirtHSVRange = getColourRange(dirtHSV, lower_dirt, upper_dirt)
+	dirtImgLoc = getPlantLocation(contourRes.copy(), dirtHSVRange)
+	#cv2.imshow("dirtImgLoc", dirtImgLoc)
 
+	
+	supportHSV = contHSV.copy()
+	supportHSVRange = getColourRange(supportHSV, lower_support, upper_support)
+	supportImgLoc = getPlantLocation(contourRes.copy(), supportHSVRange)
+	#cv2.imshow("supportImgLoc", supportImgLoc)
+
+	
+	
+	
+	
+	
+	# Add the background, support structures, and dirt pixels together
+	# Make a mask from them
+	# Use that mask to remove all non-plant pixels
+	# Get Width and Height data
+	
+	bgDirt = cv2.add(contImgLoc,dirtImgLoc)
+	#cv2.imshow("bgDirt", bgDirt)
+	
+	allNonPlant = cv2.add(bgDirt,supportImgLoc)
+	#cv2.imshow("allNonPlant", allNonPlant)
+	
+	grayNon = cv2.cvtColor(allNonPlant, cv2.COLOR_BGR2GRAY)
+	
+	ret, blkmask = cv2.threshold(grayNon, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV)
+	blkmask_inv = cv2.bitwise_not(blkmask)
+	
+	#cv2.imshow("blkmask", blkmask)
+	#cv2.imshow("blkmask_inv", blkmask_inv)
+	
+	mImg = contourRes.copy()
+	andMInv = cv2.bitwise_and(mImg, mImg, mask = blkmask)
+	cv2.imshow("andMInv", andMInv)
+	
+	
+	contheight, contwidth = andMInv.shape[:2]
+	
+	print("contheight:" + str(contheight) + "\n")
+	print("contwidth:" + str(contwidth))
+	
 	
 	if(showAll):
 		#print (count)
@@ -439,24 +740,24 @@ addfilteredImgLoc = False
 
 addedgeLoc = False
 addedgeFilteredLoc = False
-adddoubleEdge = True
+adddoubleEdge = False
 
 #addcontour = True
 #addcontourFiltered = True
-addcontourRes = True
+addcontourRes = False
 
 
 # Set bool to Show all images added to list
 showAll = False
 
 # Number of plants in image (Can be defined by user later on)
-numberPlants = 2
+numberPlants = 1
 
 
 
 
-file = easygui.fileopenbox()
-plantImg = readInPlant(file)
+#file = easygui.fileopenbox()
+plantImg = readInPlant("PEA_16.png")
 
 
 
@@ -481,117 +782,11 @@ processed, pContours = process(plantImg)
 #cv2.waitKey(0)
 #cv2.destroyAllWindows()
 
-# Pass original iamge, and processed image as reference
-#processed = drawOver(plantImg, processed)
-	
-'''
-TEST CODE FOR DRAWING ON IMAGES
-FROM LABS WEEK 2_2
-
-'''
-'''	
-def draw(event,x,y,flags,param): 
-	if event == cv2.EVENT_LBUTTONDOWN:
-		X1 = x-100
-		X2 = x+100
-		
-		Y1 = y-100
-		Y2 = y+100
-		
-		print ('x1 ', X1)
-		print ('x2 ', X2)
-		print ('y1 ', Y1)
-		print ('y2 ', Y2)
-
-		if Y1 < 0:
-			Y1 = 0
-		if Y2 > size[0]:
-			Y2 = size[0]
-		
-		if X1 < 0:
-			X1 = 0
-		if X2 > size[1]:
-			X2 = size[1]
-		
-		I[Y1:Y2,X1:X2] = HSV[Y1:Y2,X1:X2]
-		
-		##This has issues doing the bottom and right sides correctly for osme reason*********
-		cv2.rectangle(img = I, 
-			pt1 = (X1,Y1), 
-			pt2 = (X2,Y2), 
-			color = (255,0,255), 
-			thickness = 5)
-		
-		cv2.imshow("image", I)
-	
-	
-	
-	
-#cv2.setMouseCallback("image", draw)
-
-'''
-
-
-
-
-
-
-'''
-TEST CODE FOR DRAWING ON IMAGES
-# https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_gui/py_mouse_handling/py_mouse_handling.html
-'''
-'''
-drawHSV = plantImg.copy()
-
-drawing = False # true if mouse is pressed
-mode = True # if True, draw rectangle. Press 'm' to toggle to curve
-ix,iy = -1,-1
-
-# mouse callback function
-def draw_circle(event,x,y,flags,param):
-    global ix,iy,drawing,mode
-
-    if event == cv2.EVENT_LBUTTONDOWN:
-        drawing = True
-        ix,iy = x,y
-
-    elif event == cv2.EVENT_MOUSEMOVE:
-        if drawing == True:
-            if mode == True:
-                cv2.rectangle(drawHSV,(ix,iy),(x,y),(0,255,0),-1)
-            else:
-                cv2.circle(drawHSV,(x,y),5,(0,0,255),-1)
-
-    elif event == cv2.EVENT_LBUTTONUP:
-        drawing = False
-        if mode == True:
-            cv2.rectangle(drawHSV,(ix,iy),(x,y),(0,255,0),-1)
-        else:
-            cv2.circle(drawHSV,(x,y),5,(0,0,255),-1)
-
-	
-#img = np.zeros((512,512,3), np.uint8)
-cv2.namedWindow('drawHSV')
-cv2.setMouseCallback('drawHSV',draw_circle)
-
-while(1):
-    cv2.imshow('drawHSV',drawHSV)
-    k = cv2.waitKey(1) & 0xFF
-    if k == ord('m'):
-        mode = not mode
-    elif k == 27:
-        break
-'''
-
 
 
 # Draw on Areas you want to add / remove from the plant image
 # Re-process to get ideal contours / features
 def drawOver(image, reference, contours):
-
-	#cv2.imshow(" Image", image)
-	#cv2.imshow("reference Image", reference)
-	#cv2.imshow("contours Image", contours)
 
 	print ("\nPress 'a' to add area \n")
 	print ("Press 'r' to remove area \n")
@@ -607,26 +802,17 @@ def drawOver(image, reference, contours):
 	drawHSV = reference.copy()
 	height, width = output.shape[:2]
 
-	#imageRes = cv2.resize(image, (int(width/2), int(height/2)))
-	#referenceRes = cv2.resize(reference, (int(width/2), int(height/2)))
-	#combined = np.concatenate((imageRes, referenceRes), axis=0)
-	#combined = cv2.resize(combined, (width,height))
-	#cv2.imshow("combined Image", combined)
-	
-	#drawing = False # true if mouse is pressed
 	ix,iy = -1, -1
 	cSize = 5 # Circle size for drawing
 	rWidth = 5
 	rHeight = 5
 	
 	
-	#cColour = (0,0,255) # (255,0,0)
 	whiteColour = (255,255,255) 
 	blackColour = (0,0,0) 
 
 	# Holds the drawing elements
 	tmpImg = np.ones((height,width,3), np.uint8)
-	#tmpImgBlack = np.ones((height,width,3), np.uint8)
 	tmpImgBlack = np.zeros((height,width,3), np.uint8)
 	tmpImgBlack[:,:] = (255,255,255)
 	
@@ -634,11 +820,7 @@ def drawOver(image, reference, contours):
 	
 	tmpImgWhite = np.zeros((height,width,3), np.uint8)
 	tmpImgWhite[:,:] = (255,255,255)
-	
-	
-	#startedDrawing = False
-	
-	
+
 	
 	# mouse callback function
 	def draw_circle_TEST(event,x,y,flags,param):
@@ -649,7 +831,6 @@ def drawOver(image, reference, contours):
 		
 		
 		if event == cv2.EVENT_LBUTTONDOWN:
-			#startedDrawing = True
 			drawing = True
 			ix,iy = x,y
 		
@@ -663,7 +844,6 @@ def drawOver(image, reference, contours):
 				Y2 = y+rHeight
 				
 				if adding:
-					#print ("add")
 					
 					cv2.rectangle(img = drawHSV, 
 						pt1 = (X1,Y1), 
@@ -680,34 +860,12 @@ def drawOver(image, reference, contours):
 					tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
 					
 				elif not adding:
-					#print ("remove")
-					'''
-					cv2.rectangle(img = drawHSV, 
-						pt1 = (X1,Y1), 
-						pt2 = (X2,Y2), 
-						color = (0,0,255), 
-						thickness = -1)
-					'''
-					'''
-					cv2.rectangle(img = tmpImg, 
-						pt1 = (X1,Y1), 
-						pt2 = (X2,Y2), 
-						color = blackColour, 
-						thickness = -1)
-					'''
-
+				
 					cv2.rectangle(img = tmpImgBlack, 
 						pt1 = (X1,Y1), 
 						pt2 = (X2,Y2), 
 						color = blackColour, 
 						thickness = -1)
-			
-				#cv2.circle(drawHSV,(x,y),cSize,cColour,-1)
-				#cv2.circle(tmpImg,(x,y),cSize,blackColour,-1)
-				#cv2.ellipse(tmpImg,(x,y),(cSize,cSize),0,0,360,255,-1)
-				#ell = cv2.ellipse(tmpImg,(x,y),(cSize,cSize),0,0,360,255, -1)
-		
-				#print (ell.shape)
 				
 		elif event == cv2.EVENT_LBUTTONUP:
 			X1 = x-rWidth
@@ -717,8 +875,6 @@ def drawOver(image, reference, contours):
 			Y2 = y+rHeight
 			
 			if adding:
-				#print ("add")
-				#cColour = (255,0,0)
 				
 				cv2.rectangle(img = drawHSV, 
 					pt1 = (X1,Y1), 
@@ -735,88 +891,15 @@ def drawOver(image, reference, contours):
 				tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
 				
 			elif not adding:
-				#print ("remove")
-			
-				#cColour = (0,0,255)			
-			
-				'''cv2.rectangle(img = drawHSV, 
-					pt1 = (X1,Y1), 
-					pt2 = (X2,Y2), 
-					color = (0,0,255), 
-					thickness = -1)
-				'''
-				'''
-				cv2.rectangle(img = tmpImg, 
-					pt1 = (X1,Y1), 
-					pt2 = (X2,Y2), 
-					color = blackColour, 
-					thickness = -1)
-				'''
+
 				cv2.rectangle(img = tmpImgBlack, 
 					pt1 = (X1,Y1), 
 					pt2 = (X2,Y2), 
 					color = blackColour, 
 					thickness = -1)
 			
-			
-			
-			#tmpImg[Y1:Y2,X1:X2] = image[Y1:Y2,X1:X2]
-			#cv2.circle(drawHSV, (x,y), cSize, cColour, -1)
-			#cv2.circle(tmpImg, (x,y), cSize, blackColour, -1)
 			drawing = False
 
-	
-	
-		'''
-			REALLY WONKY TEST CODE.
-			
-			TRYING TO DO LIVE UPPDATED CONTOURING.
-			
-			
-			# Can do more efficently, remove the range stuff, just set the baseimg circles to black or
-			# The original image pixel area.
-			#
-			# Show the user the updating image, but use a scratch image for processing changes.
-			#
-			
-		'''
-		
-		'''
-		roiB = cv2.inRange(tmpImg, lowerB, higherB)
-		roiR = cv2.inRange(tmpImg, lowerR, higherR)
-		
-		corrected = cv2.bitwise_and(output, output, mask = roiB)
-		
-		mask_inv_b = cv2.bitwise_not(roiB)
-		mask_inv_r = cv2.bitwise_not(roiR)
-		corrected = cv2.bitwise_or(output, output, mask = mask_inv_r)
-		'''
-		
-		
-		#edgeImg = contours.copy()
-		
-		'''
-		'mask' is picking up the 'removing' rectangles, but not the addition ones
-		Show up as white squares in 'mask' imshow
-		***************MY THRESHOLDING IS BORKED******************FIX MEEEEEEEEEE
-		'''
-		
-		
-		
-		
-		
-		'''
-		JUST SAVE THE ADD AND REMOVE TO SEPERATE IMAGES
-		THEN PROCEED TO OVERLAY THEM IN DIFFERENT ORDERS
-		
-		# put contours over the added portions, then put removed over the contours portion
-		# This could work (Similar to extracting tmpImg pixels)
-		# https://stackoverflow.com/questions/14063070/overlay-a-smaller-image-on-a-larger-image-python-opencv
-		# Use this link, might help
-		
-		
-		
-		'''
 		
 		# TESTING NEW ORDER 13:40 22 Jan 2018
 		
@@ -836,56 +919,20 @@ def drawOver(image, reference, contours):
 		
 		# This is the contour + colour pixels
 		tmpAll = andMInv.copy()
-		#cv2.imshow("tmpAll", tmpAll)
 		
 		# Black portion
 		tmpBlackGray = cv2.cvtColor(tmpImgBlack,cv2.COLOR_BGR2GRAY)
 		retB, maskB = cv2.threshold(tmpBlackGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
 		maskB_inv = cv2.bitwise_not(maskB)
-		#andMInv = cv2.bitwise_and(mImg, mImg, mask = maskB_inv)
 		
 		
-		# **************************************************************************************************
-		#
-		# THIS ONE IS CLOSE 14:01 22 JAN 2018
-		# IT DOESNT WANT TO OVERWRITE WITH COLOUR THOUGH
-		# tmpAll is the issue, because of copy() and andMInv or w/e
-		
-		# 14:11 22 JAN 2018
-		
-		'''
-		
-		The issue is obvious
-		the black rects are not being removed or overwritten on, they are the last layer being placed onto the image stackoverflow
-			ergo: They can't have colour pixels placed on top of them
-		
-		'''
-		
-		andMAll = cv2.bitwise_and(tmpImgBlack, tmpImgBlack,dst = tmpAll, mask = maskB)
-		
-		#****************************************************************
-		#andWhiteAll = mergeImages(andMAll, tmpImgWhite, 0.5, 0.5)
-		#cv2.imshow("andWhiteAll", andWhiteAll)
-		
-		#cv2.imshow("andMAll", andMAll)
-		#
-		# **************************************************************************************************
-		
-		#cv2.imshow("tmpBlackGray", tmpBlackGray)
-		#cv2.imshow("maskB", maskB) # white rectangles on black BG
-		#cv2.imshow("maskB_inv", maskB_inv) # black rectangles on white BG
-		
-		
-		
-		
+		andMAll = cv2.bitwise_and(tmpImgBlack, tmpImgBlack,dst = tmpAll, mask = maskB)	
+
 		
 		# Black is not covering the plant pixels
 		# Go back and think about the actual pizel gathering process I've made*********
 		# 22-Jan-2018 11:30am 
 		mGrayImg = mergeImages(tmpImg.copy(), contours.copy(), 0.5, 0.5)
-		#cv2.imshow("tmpImg", tmpImg)
-		#cv2.imshow("contours", contours)
-		#cv2.imshow("mGrayImg", mGrayImg)
 		
 		
 		tmpGray = cv2.cvtColor(mGrayImg,cv2.COLOR_BGR2GRAY)
@@ -894,77 +941,33 @@ def drawOver(image, reference, contours):
 		# 22 Jan 2018 11:07 better threshold
 		
 		# Orig threshold
-		#ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
 		mask_inv = cv2.bitwise_not(mask)
-		#cv2.imshow("tmpGray", tmpGray)
-		#cv2.imshow("mask", mask)
-		#cv2.imshow("mask_inv", mask_inv)
+
 		
 		mImg = output
-		
-		#mImg = mergeImages(tmpImg.copy(), contours.copy(), 0.5, 0.5)
 		
 		# output vs contours.copy()
 		
 		# Shows whole image and Removed portions
 		andM = cv2.bitwise_and(mImg, mImg, mask = mask)
 		orM = cv2.bitwise_or(mImg, mImg, mask = mask)
-		#cv2.imshow("andM", andM)
-		#cv2.imshow("orM", orM)
 		
 		
 		# Only shows added portions
 		# This one is good? I think?
 		andMInv = cv2.bitwise_and(mImg, mImg, mask = mask_inv)
 		orMInv = cv2.bitwise_or(mImg, mImg, mask = mask_inv)
-		#cv2.imshow("andMInv", andMInv)
-		#cv2.imshow("orMInv", orMInv)
 		
 		
 		
 		# THIS THING IS NOT BEING CORRECLT OVERWRITTEN
 		# BLACK COLOURING IS NOT WORKING
 		baseImg = mergeImages(tmpImg.copy(), contours.copy(), 1, 0)
-
-		
-		#baseImg = mergeImages(tmpImg.copy(), edgeImg, 0.1, 0.9)
-		#baseImg2 = mergeImages(tmpImg.copy(), edgeImg, 0.3, 0.7)
-		#baseImg3 = mergeImages(tmpImg.copy(), edgeImg, 0.5, 0.5)
-		#baseImg4 = mergeImages(tmpImg.copy(), edgeImg, 0.7, 0.3)
-		#baseImg5 = mergeImages(tmpImg.copy(), edgeImg, 0.9, 0.1)
-		
-		
-		'''
-		cv2.imshow("baseImg", baseImg)
-		cv2.imshow("baseImg2", baseImg2)
-		cv2.imshow("baseImg3", baseImg3)
-		cv2.imshow("baseImg4", baseImg4)
-		cv2.imshow("baseImg5", baseImg5)
-		'''
-		#cv2.imshow("tmpImg", tmpImg)
-		#cv2.imshow("contours", contours)
-		
-		#cv2.waitKey(0)
-		
-		
-		
-		# THIS IS WHY CONTOURS WERE NOT WORKING CORRECTLY************************
-		# IT WAS NOT GETTING MERGED AT ALL,
-		# JUST USING THE BASE CONTOURS COPY**************************************
-		# 
-		# CONTOUR USES 'baseImg' FOR GETTING POLYLINES, AND 'edge' FOR CANNY
-		# SO THE RESULTS ARE SCREWED UP
-		#
-		
 		
 		# USED TO GET CANNY EDGES***********************
 		baseImg = andMAll
 		
-		edge = applyCanny(baseImg, 30, 200)
-
-		#cv2.imshow("baseImg", baseImg)
-		#cv2.imshow("edge", edge)
-		
+		edge = applyCanny(baseImg, 30, 200)		
 		
 		# Finds contours (Have to be closed edges)
 		(_,contoursEdge,_) = cv2.findContours(edge, mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
@@ -972,51 +975,15 @@ def drawOver(image, reference, contours):
 		# Find largest contours by Area (Have to be closed contours)
 		contoursEdge = sorted(contoursEdge, key = cv2.contourArea, reverse = True)		
 		
-		
-		
-		'''
-		
-		NEED TO PASS IN A TEMP IMAGE (NOT 'drawHSV')
-		
-		WHY?
-			BECAUSE IT DOESNT RESET THE CONTOURS,
-			IT ONLY DRAWS OVER THEM,
-			SO IT'S A MESS
-		
-		
-		
-		'''
-		
-		#cv2.imshow('edge', edge)
-		
 		for i in range(numberPlants):
 			
 			# Draw rectangles, with order of Contour size
 			
-			#place = i
-			#x,y,w,h = cv2.boundingRect(contoursEdge[i])
-			
-			
 			hull = cv2.convexHull(contoursEdge[i])
-			#cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
 			img = cv2.drawContours(drawHSV, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
-			
 			
 			# TESTING UPDATED CONTOURS
 			img2 = cv2.drawContours(holdingImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
-			
-			#print ("success")
-
-		#********************************************
-		# TESTING OUT UPDATED CONTOURS
-		# THEY SUCK. 20:30 22-JAN-2018
-		#cv2.imshow('holdingImg2', holdingImg)
-		#cv2.imshow('baseImgPoly ', baseImg)
-		'''
-		END WONKY TEST CODE
-		'''
-		#cv2.imshow('tmp', tmpImg)
-
 		
 		#tmpImgWhite
 		tmpHSV = cv2.cvtColor(tmpAll,cv2.COLOR_BGR2GRAY)
@@ -1024,20 +991,6 @@ def drawOver(image, reference, contours):
 		
 		maskHSV_inv = cv2.bitwise_not(maskHSV)
 		tstHSV = cv2.bitwise_and(output, output, mask = maskHSV_inv)
-		#cv2.imshow("tstHSV", tstHSV)
-		
-		'''
-		maskB_inv = cv2.bitwise_not(maskB)
-		andMAll = cv2.bitwise_and(tmpImgBlack, tmpImgBlack,dst = tmpAll, mask = maskB)
-		cv2.imshow("andMAll", andMAll)
-		cv2.imshow("maskHSV", maskHSV)
-		'''
-		#tmpAll, output, 
-		#merge them with white transparency?
-	
-	
-	
-	
 	
 	adding = False
 	
@@ -1065,69 +1018,10 @@ def drawOver(image, reference, contours):
 		
 		if k == ord('a'):
 			adding = True
-			#cColour = (255,0,0)
 			
 		if k == ord('r'):
 			adding = False
-			#cColour = (0,0,255)
-		
-	#cv2.destroyAllWindows()
-	#cv2.waitKey(0)
 
-	#tmpGray = cv2.cvtColor(tmpImg,cv2.COLOR_BGR2GRAY)
-	#ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
-	#mask_inv = cv2.bitwise_not(mask)
-	
-	
-	
-	# THIS IS FIALING BECAUSE IM NOT MERGING THE IMAGES TOGETHER CORRECTLY ~12:25pm 20 Jan 2018
-	# STILL KINDA SORTA FAILING, 12:47pm 20 Jan 2018
-	
-	'''
-	lowerB = (255, 0, 0)
-	higherB = (255, 0, 0)
-	
-	lowerR = (0, 0, 255)
-	higherR = (0, 0, 255)
-	
-	
-	
-	
-	# convert to HSV, then get range
-	#converted = cv2.cvtColor(tmpImg, cv2.COLOR_BGR2HSV)
-
-	#cv2.imshow("tmpImg", tmpImg)
-	#cv2.imshow("converted", converted)
-	
-	roiB = cv2.inRange(tmpImg, lowerB, higherB)
-	roiR = cv2.inRange(tmpImg, lowerR, higherR)
-	#cv2.imshow("roiB", roiB)
-	#cv2.imshow("roiR", roiR)
-	#cv2.imshow("output", output)
-	
-	corrected = cv2.bitwise_and(output, output, mask = roiB)
-	#cv2.imshow("Corr B", corrected)
-	
-	mask_inv_b = cv2.bitwise_not(roiB)
-	mask_inv_r = cv2.bitwise_not(roiR)
-	#cv2.imshow("mask_inv B", mask_inv_b)
-	#cv2.imshow("mask_inv R", mask_inv_r)
-	
-	corrected = cv2.bitwise_or(output, output, mask = mask_inv_r)
-	#cv2.imshow("Corr R", corrected)
-	
-	#corrected = cv2.bitwise_or(corrected, output, mask = roiR)
-	#cv2.imshow("Corr R", corrected)
-	
-	
-	# Final image, with empty variable for the returned contour value (not needed right now)
-	final, _ = process(corrected)
-	
-	#cv2.imshow("final", final)
-	
-	'''
-	
-	
 	cv2.waitKey(0)
 	
 	return drawHSV
@@ -1135,11 +1029,16 @@ def drawOver(image, reference, contours):
 # Global bool, because, reasons
 drawing = False
 
+
+
 # Pass original image, and processed image as reference
 
 
+# Internal Python code
 #processed = drawOver(plantImg, processed, pContours)
 
+
+# Python code in external file
 #dOver = DrawOver(plantImg, processed, pContours, numberPlants)
 #processed = dOver.drawNew()
 
@@ -1148,159 +1047,6 @@ cv2.imwrite('./images/final.png', processed)
 
 
 
-'''
-
-drawHSV = plantImg.copy()
-
-drawing = False # true if mouse is pressed
-ix,iy = -1,-1
-cSize = 5 # Circle size for drawing
 
 
-# Holds the drawing elements
-tmpImg = np.zeros((height,width,3), np.uint8)
-startedDrawing = False
-
-# mouse callback function
-def draw_circle(event,x,y,flags,param):
-	global ix,iy,drawing
-	
-	if event == cv2.EVENT_LBUTTONDOWN:
-		startedDrawing = True
-		drawing = True
-		ix,iy = x,y
-	
-	elif event == cv2.EVENT_MOUSEMOVE:
-		if drawing == True:
-			cv2.circle(drawHSV,(x,y),cSize,(0,0,255),-1)
-			cv2.circle(tmpImg,(x,y),cSize,(0,0,255),-1)
-	
-	elif event == cv2.EVENT_LBUTTONUP:
-		cv2.circle(drawHSV, (x,y), cSize, (0, 0, 255), -1)
-		cv2.circle(tmpImg, (x,y), cSize, (0, 0, 255), -1)
-		drawing = False
-
-#img = np.zeros((512,512,3), np.uint8)
-cv2.namedWindow('drawHSV')
-cv2.setMouseCallback('drawHSV',draw_circle)
-
-
-
-while(1):
-    cv2.imshow('drawHSV',drawHSV)
-    k = cv2.waitKey(1) & 0xFF
-    if k == 27:
-        break
-	
-	#if k == ord('i'):
-	#	cSize += 1
-	
-	#if k == ord('d'):
-	#	if(cSize >= 2):
-	#		cSize = cSize-1
-
-    if k == ord('i'):
-        cSize += 1
-    elif k == ord('d'):
-        if cSize >= 2:
-            cSize -= 1
-	
-cv2.destroyAllWindows()
-cv2.waitKey(0)
-
-tmpGray = cv2.cvtColor(tmpImg,cv2.COLOR_BGR2GRAY)
-ret, mask = cv2.threshold(tmpGray, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV)
-mask_inv = cv2.bitwise_not(mask)
-
-
-#cv2.imshow("tmpImg", tmpImg)
-#cv2.imshow("mask", mask)	
-cv2.imshow("mask_inv", mask_inv)	
-cv2.waitKey(0)
-'''
-
-
-
-
-'''
-TEST CODE
-# GETS THE ROI FROM DRAG AND DROP MOUSE CLICKS
-# https://www.pyimagesearch.com/2015/03/09/capturing-mouse-click-events-with-python-and-opencv/
-
-'''	
-
-
-'''
-# initialize the list of reference points and boolean indicating
-# whether cropping is being performed or not
-refPt = []
-cropping = False
-
-def click_and_crop(event, x, y, flags, param):
-	# grab references to the global variables
-	global refPt, cropping
-
-	# if the left mouse button was clicked, record the starting
-	# (x, y) coordinates and indicate that cropping is being
-	# performed
-	if event == cv2.EVENT_LBUTTONDOWN:
-		refPt = [(x, y)]
-		cropping = True
-
-	# check to see if the left mouse button was released
-	elif event == cv2.EVENT_LBUTTONUP:
-		# record the ending (x, y) coordinates and indicate that
-		# the cropping operation is finished
-		refPt.append((x, y))
-		cropping = False
-
-		# draw a rectangle around the region of interest
-		cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
-		cv2.imshow("image", image)
-
-
- 
-# load the image, clone it, and setup the mouse callback function
-image = plantImg #cv2.imread(args["image"])
-clone = image.copy()
-cv2.namedWindow("image")
-cv2.setMouseCallback("image", click_and_crop)
- 
-# keep looping until the 'q' key is pressed
-while True:
-	# display the image and wait for a keypress
-	cv2.imshow("image", image)
-	key = cv2.waitKey(1) & 0xFF
- 
-	# if the 'r' key is pressed, reset the cropping region
-	if key == ord("r"):
-		image = clone.copy()
- 
-	# if the 'c' key is pressed, break from the loop
-	elif key == ord("c"):
-		break
- 
-# if there are two reference points, then crop the region of interest
-# from teh image and display it
-if len(refPt) == 2:
-	roi = clone[refPt[0][1]:refPt[1][1], refPt[0][0]:refPt[1][0]]
-	cv2.imshow("ROI", roi)
-	cv2.waitKey(0)
- 
-# close all open windows
-cv2.destroyAllWindows()		
-		
-		
-'''	
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 #cv2.waitKey(0)
