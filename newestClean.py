@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib import image as image
 import easygui
 
-
+import cv2.aruco as aruco
 
 from DrawOver import DrawOver
 
@@ -20,11 +20,11 @@ upper_green = (80,255,255) 								# Upper plant Colourspace (HSV)
 
 
 # This is the lower and upper ranges of the background
-lower_bg  = (20, 130, 200)
+lower_bg  = (20, 125, 200)
 upper_bg = (28, 200, 255)
 
-lower_dirt = (20, 130, 45)
-upper_dirt = (30, 200, 115)
+lower_dirt = (20, 130, 25)
+upper_dirt = (30, 255, 115)
 
 
 lower_support = (19, 67, 70)
@@ -262,14 +262,42 @@ def getContours(plant, edge):
 		#epsilon = 0.01*cv2.arcLength(contoursEdge[i],True)
 		#approx = cv2.approxPolyDP(contoursEdge[i],epsilon,True)
 		
-		hull = cv2.convexHull(contoursEdge[i])
-		cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
-		img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
+		
+		# Contours that wrap around the plant object
+		#hull = cv2.convexHull(contoursEdge[i])
+		#cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
+		#img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
 		
 		baseImg = baseImg[y-5:y+h+5, x-5:x+w+5]
 
 	return baseImg
+
+
+# THIS NEEDS SOME WORK
+# Gets Contours using edges derived from a mask image
+def getContoursWrap(plant, edge):
+
+	# Makes a copy of original plant image 
+	#(contours draw on the image supplied, use temp image)
+	baseImg = plant.copy()
+
 	
+	# Finds contours (Have to be closed edges)
+	(_,contoursEdge,_) = cv2.findContours(edge, mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
+
+
+	# Find largest contours by Area (Have to be closed contours)
+	contoursEdge = sorted(contoursEdge, key = cv2.contourArea, reverse = True)
+	
+	
+	for i in range(numberPlants):
+		
+		# Contours that wrap around the plant object
+		hull = cv2.convexHull(contoursEdge[i])
+		cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
+		img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
+		
+	return baseImg
 	
 
 # The full image process pipeline
@@ -705,16 +733,147 @@ def process(plantOrig):
 	#cv2.imshow("blkmask", blkmask)
 	#cv2.imshow("blkmask_inv", blkmask_inv)
 	
-	mImg = contourRes.copy()
-	andMInv = cv2.bitwise_and(mImg, mImg, mask = blkmask)
-	cv2.imshow("andMInv", andMInv)
+	cont = contourRes.copy()
+	contAnd = cv2.bitwise_and(cont, cont, mask = blkmask)
+	#cv2.imshow("contAnd", contAnd)
 	
 	
-	contheight, contwidth = andMInv.shape[:2]
+	
+	cannyContAnd = applyCanny(contAnd, 30, 200)
+	cv2.imshow("cannyContAnd", cannyContAnd)
+	
+	
+	blur = cv2.GaussianBlur(contAnd.copy(),(5,5),0)
+	cv2.imshow("blur", blur)
+	blurContAnd = applyCanny(blur, 30, 200)
+	cv2.imshow("blurContAnd", blurContAnd)
+	
+	
+	
+	bilatCont = applyBilateralFilter(contAnd.copy(), 11, 17, 17)
+	bilatContAnd = applyCanny(bilatCont, 30, 200)
+	cv2.imshow("bilatContAnd", bilatContAnd)
+	
+	edgeHSV1 = cannyContAnd.copy()
+	#edgeHSV2 = bilatContAnd.copy()
+	edgeHSV2 = blurContAnd.copy()
+	shapeFinal = contAnd.shape
+
+	doubleHSVEdge = mergeEdges(edgeHSV1, edgeHSV2, shapeFinal)
+	cv2.imshow("doubleHSVEdge", doubleHSVEdge)
+	
+	
+	
+	finalContour = getContoursWrap(contAnd, doubleHSVEdge)
+	cv2.imshow("finalContour", finalContour)
+	
+	'''
+	
+	##############
+	# FIX THIS PORTION TO FIND THE IMAGE CONTOUR
+	
+	#finalContour = getContoursWrap(andMInv, doubleEdge)
+	#cv2.imshow("finalContour", finalContour)
+	
+	
+	final = convertBGRHSV(andMInv)
+	finalHSV = getColourRange(final, lower_green, upper_green)
+	
+	bilatHSV = applyBilateralFilter(andMInv.copy(), 11, 17, 17)
+	filteredHSV = convertBGRHSV(bilatHSV)
+	filteredHSVRange = getColourRange(filteredHSV, lower_green, upper_green)
+
+	finalHSVLoc = getPlantLocation(andMInv.copy(), finalHSV)
+	cv2.imshow("finalHSVLoc", finalHSVLoc)
+	
+	filteredHSVLoc = getPlantLocation(andMInv.copy(), filteredHSVRange)
+	cv2.imshow("filteredHSVLoc", filteredHSVLoc)
+	
+	
+	mergedPlantAreas = mergeImages(finalHSVLoc, filteredHSVLoc, 0.5, 0.5)
+	#cv2.imshow("mergedPlantAreas", mergedPlantAreas)
+	
+	edgeHSVLoc = applyCanny(finalHSVLoc, 30, 200)
+	edgeFilteredHSVLoc = applyCanny(filteredHSVLoc, 30, 200)
+
+
+
+	edgeHSV1 = edgeHSVLoc.copy()
+	edgeHSV2 = edgeFilteredHSVLoc.copy()
+	shapeFinal = andMInv.shape
+
+	doubleHSVEdge = mergeEdges(edgeHSV1, edgeHSV2, shapeFinal)
+	#cv2.imshow("doubleHSVEdge", doubleHSVEdge)
+	
+	
+	finalContour = getContoursWrap(andMInv.copy(), doubleHSVEdge)
+	cv2.imshow("finalContour", finalContour)
+	
+	'''
+	
+	
+	
+	
+	
+	
+	
+	contheight, contwidth = contAnd.shape[:2]
 	
 	print("contheight:" + str(contheight) + "\n")
 	print("contwidth:" + str(contwidth))
 	
+	
+	
+	
+	# www.philipzucker.com/aruco-in-opencv/
+
+	'''
+		drawMarker(...)
+			drawMarker(dictionary, id, sidePixels[, img[, borderBits]]) -> img
+	'''
+	''' 
+	aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
+	print(aruco_dict)
+	# second parameter is id number
+	# last parameter is total image size
+	aru = aruco.drawMarker(aruco_dict, 2, 700)
+	cv2.imwrite("test_marker.jpg", aru)
+	
+	cv2.imshow('aru',aru)
+	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
+	'''
+	
+	'''
+	frame = plantOrig.copy()
+	#print(frame.shape) #480x640
+
+	# Our operations on the frame come here
+	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
+	parameters =  aruco.DetectorParameters_create()
+
+	#print(parameters)
+	'''
+	'''    detectMarkers(...)
+		detectMarkers(image, dictionary[, corners[, ids[, parameters[, rejectedI
+		mgPoints]]]]) -> corners, ids, rejectedImgPoints
+		'''
+		#lists of ids and the corners beloning to each id
+	'''
+	corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
+	print(corners)
+
+	#It's working.
+	# my problem was that the cellphone put black all around it. The alrogithm
+	# depends very much upon finding rectangular black blobs
+	
+	gray = aruco.drawDetectedMarkers(gray, corners)
+	
+	#print(rejectedImgPoints)
+	# Display the resulting frame
+	cv2.imshow('frame',gray)
+	'''
 	
 	if(showAll):
 		#print (count)
@@ -758,6 +917,7 @@ numberPlants = 1
 
 #file = easygui.fileopenbox()
 plantImg = readInPlant("PEA_16.png")
+#plantImg = readInPlant("plantqr.jpg")
 
 
 
