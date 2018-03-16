@@ -926,7 +926,7 @@ numberPlants = 1
 
 
 #file = easygui.fileopenbox()
-plantImg = readInPlant("PEA_10.png")
+plantImg = readInPlant("PEA_18.png")
 #plantImg = readInPlant("plantqr.jpg")
 
 
