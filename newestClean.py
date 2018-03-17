@@ -1,3 +1,7 @@
+from __future__ import print_function
+import pyzbar.pyzbar as pyzbar
+
+
 import sys
 import numpy as np
 import cv2
@@ -9,6 +13,8 @@ import easygui
 import cv2.aruco as aruco
 
 from DrawOver import DrawOver
+
+
 
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -282,6 +288,102 @@ def getContours(plant, edge):
 		#cv2.waitKey(0)
 		
 	return baseImg
+
+
+
+
+# Find the QR Code in the image
+def decode(im) : 
+
+	height, width = im.shape[:2]
+	gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+
+	# Find barcodes and QR codes  
+	decodedObjects = pyzbar.decode((gray.tobytes(), width, height))
+ 
+	# Print results
+	for obj in decodedObjects:
+		print('Type : ', obj.type)
+		print('Data : ', obj.data,'\n')
+	
+	return decodedObjects
+
+
+# Display the QR Code on the image passed into the function
+# Display barcode and QR code location  
+def display(im, decodedObjects):
+
+	# Loop over all decoded objects
+	for decodedObject in decodedObjects: 
+		points = decodedObject.rect
+		print(points)
+
+		# If the points do not form a quad, find convex hull
+		if len(points) > 4 : 
+			hull = cv2.convexHull(np.array([point for point in points], dtype=np.float32))
+			hull = list(map(tuple, np.squeeze(hull)))
+		else : 
+			hull = points;
+
+		# Number of points in the convex hull
+		n = len(hull)
+
+
+		X = hull[0]
+		width = hull[2]
+		Y = hull[1]
+		height = hull[3]
+
+		cv2.line(im, (X,Y), (X + width,Y), (255,0,0), 1) # top line
+		cv2.line(im, (X,Y), (X, Y + height), (255,0,0), 1) # left line
+		cv2.line(im, (X,Y + height), (X + width, Y + height), (255,0,0), 1) # bottom line
+		cv2.line(im, (X + width, Y + height), (X + width, Y), (255,0,0), 1) # right line
+	
+	# Display results
+	#cv2.imshow("Results", im);
+	#cv2.waitKey(0);
+
+	return im
+
+
+# Display the QR Code on the image passed into the function
+# Display barcode and QR code location  
+#def qrcodeDimensions(im, decodedObjects):
+def qrcodeDimensions(decodedObjects):
+
+	X = 0
+	Y = 0
+	width = 0
+	height = 0
+
+
+	# Loop over all decoded objects
+	for decodedObject in decodedObjects: 
+		points = decodedObject.rect
+		#print(points)
+
+		X = points[0]
+		width = points[2]
+		Y = points[1]
+		height = points[3]
+		
+		'''
+		print(X)
+		print(Y)
+		print(width)
+		print(height)
+
+		cv2.line(im, (X,Y), (X + width,Y), (255,0,0), 1) # top line
+		cv2.line(im, (X,Y), (X, Y + height), (255,0,0), 1) # left line
+		cv2.line(im, (X,Y + height), (X + width, Y + height), (255,0,0), 1) # bottom line
+		cv2.line(im, (X + width, Y + height), (X + width, Y), (255,0,0), 1) # right line
+		'''
+	
+	# Display results
+	#cv2.imshow("Results", im);
+	#cv2.waitKey(0);
+
+	return width, height
 
 
 # THIS NEEDS SOME WORK
@@ -828,9 +930,43 @@ def process(plantOrig):
 	
 	
 	contheight, contwidth = contAnd.shape[:2]
-	
 	print("contheight:" + str(contheight) + "\n")
-	print("contwidth:" + str(contwidth))
+	print("contwidth:" + str(contwidth) + "\n")
+	
+	
+	
+	
+	
+	# 17 March 2018 12:26pm
+	# QR Code stuff
+	# https://github.com/NaturalHistoryMuseum/pyzbar
+	# https://www.learnopencv.com/barcode-and-qr-code-scanner-using-zbar-and-opencv/
+	
+	decodedObjects = decode(plantOrig.copy())
+	#disp = display(plantOrig.copy(), decodedObjects)
+	#cv2.imshow('disp', disp)
+
+	print(decodedObjects[0].data)
+	
+	#qr = qrcodeDimensions(plantOrig.copy(), decodedObjects)
+	#cv2.imshow('qr', qr)
+
+	qrX, qrY = qrcodeDimensions(decodedObjects)
+	print("qrX:" + str(qrX) + "\n")
+	print("qrY:" + str(qrY) + "\n")
+	
+	
+	cm = 5
+	
+	# how Many pixels per centimetre
+	cmWidth = qrX / cm
+	cmHeight = qrY / cm
+	
+	
+	print("Plant Width: " + str(contwidth / cmWidth) + "cm \n")
+	print("Plant Height: " + str(contheight / cmHeight) + "cm \n")
+	
+	#cv2.waitKey(0)
 	
 	
 	
@@ -926,7 +1062,8 @@ numberPlants = 1
 
 
 #file = easygui.fileopenbox()
-plantImg = readInPlant("PEA_18.png")
+plantImg = readInPlant("PEA_16_QR_DISTORT3.png")
+#plantImg = readInPlant("PEA_18.png")
 #plantImg = readInPlant("plantqr.jpg")
 
 

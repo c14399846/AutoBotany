@@ -2,10 +2,16 @@
 # CODE DERVIED FORM THESE SOURCES, WITH ADAPTATIONS
 # Need to get 'dll' files to have this working correctly
 
-
+# https://github.com/NaturalHistoryMuseum/pyzbar
 # https://www.learnopencv.com/barcode-and-qr-code-scanner-using-zbar-and-opencv/
 # https://github.com/bharathp666/opencv_qr
 # aishack.in/tutorials/scanning-qr-codes-verify-finder/
+
+
+# Random string generator
+# https://www.random.org/strings/?num=10&len=25&digits=on&upperalpha=on&loweralpha=on&unique=on&format=html&rnd=new
+# YfxhPDD3SR9QJobJM08G
+# qrcode_random_id.png
 
 
 from __future__ import print_function
