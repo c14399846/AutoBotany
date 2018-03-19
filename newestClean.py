@@ -5,7 +5,6 @@ import pyzbar.pyzbar as pyzbar
 import sys
 import numpy as np
 import cv2
-#from PIL import Image
 from matplotlib import pyplot as plt
 from matplotlib import image as image
 import easygui
@@ -15,27 +14,16 @@ import cv2.aruco as aruco
 from DrawOver import DrawOver
 
 
-
-
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 lower_green = (30,60,60) # Original, some patches, little 'Noise'
-#lower_green = (30,60,50) # Decent detection, catches more 'Noise'
-#lower_green = (30,60,40)  # Less pathches, more 'Noise' # Lower plant Colourspace (HSV)
 upper_green = (80,255,255)	# Upper plant Colourspace (HSV)
-#upper_green = (80,255,190)	# Upper plant Colourspace (HSV)
-
-
 
 # This is the lower and upper ranges of the background
 lower_bg  = (20, 70, 200)
-#upper_bg = (30, 200, 255)
 upper_bg = (33, 150, 255) # This one rmeoved a lot of crap, the plant look decent too
 
 lower_dirt = (20, 130, 25)
 upper_dirt = (30, 255, 115)
-#upper_dirt = (32, 255, 115) # These are good for removing dirt, and make a better contour too
-#upper_dirt = (33, 255, 115)
-
 
 lower_support = (19, 67, 70)
 upper_support = (30, 252, 253)
@@ -200,9 +188,7 @@ def applyMorph(image):
 	smallMorph = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
 
 	image = cv2.dilate(image,largeMorph)
-	#image = cv2.erode(image,largeMorph)
-	#image = cv2.dilate(image,smallMorph)
-	
+
 	return image
 
 	
@@ -255,37 +241,12 @@ def getContours(plant, edge):
 	##################################################################
 	
 	for i in range(numberPlants):
-		
-		# Draw rectangles, with order of Contour size
-		
-		place = i
+
 		x,y,w,h = cv2.boundingRect(contoursEdge[i])
-		#cv2.rectangle(baseImg, (x,y), (x+w, y+h), (255,0,0), 2)
-		#cv2.putText(baseImg,str(place),(x, (y-10)), font, 1,(255,255,255),2,cv2.LINE_AA)		
-		
-		# Crops plant out of image, for later usage
-		#cropped = baseImg[y-5:y+h+5, x-5:x+w+5]
-		#cv2.imshow("cropped", cropped)
-		#cv2.waitKey(0)
-		
-		# Other kind of Contouring
-		#epsilon = 0.01*cv2.arcLength(contoursEdge[i],True)
-		#approx = cv2.approxPolyDP(contoursEdge[i],epsilon,True)
-		
-		
-		# Contours that wrap around the plant object
-		#hull = cv2.convexHull(contoursEdge[i])
-		#cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
-		#img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
-		
-		
 
 		# Cropping is here (If it works.....)
-		#baseImg = baseImg[y-5:y+h+5, x-5:x+w+5]
 		baseImg = baseImg[y:y+h, x:x+w]
-		
-		#cv2.imshow("baseImg", baseImg)
-		#cv2.waitKey(0)
+
 		
 	return baseImg
 
@@ -338,10 +299,6 @@ def display(im, decodedObjects):
 		cv2.line(im, (X,Y), (X, Y + height), (255,0,0), 1) # left line
 		cv2.line(im, (X,Y + height), (X + width, Y + height), (255,0,0), 1) # bottom line
 		cv2.line(im, (X + width, Y + height), (X + width, Y), (255,0,0), 1) # right line
-	
-	# Display results
-	#cv2.imshow("Results", im);
-	#cv2.waitKey(0);
 
 	return im
 
@@ -366,22 +323,7 @@ def qrcodeDimensions(decodedObjects):
 		width = points[2]
 		Y = points[1]
 		height = points[3]
-		
-		'''
-		print(X)
-		print(Y)
-		print(width)
-		print(height)
 
-		cv2.line(im, (X,Y), (X + width,Y), (255,0,0), 1) # top line
-		cv2.line(im, (X,Y), (X, Y + height), (255,0,0), 1) # left line
-		cv2.line(im, (X,Y + height), (X + width, Y + height), (255,0,0), 1) # bottom line
-		cv2.line(im, (X + width, Y + height), (X + width, Y), (255,0,0), 1) # right line
-		'''
-	
-	# Display results
-	#cv2.imshow("Results", im);
-	#cv2.waitKey(0);
 
 	return width, height
 
@@ -419,86 +361,8 @@ def process(plantOrig):
 	processedImages = [] # Array of processed images
 	count = 0 			 # Integer that holds number of images processed + saved
 	
-	
-	
-	# GRABCUT TEST CRAP
-	# 12 mar 2018 11:41am
-	'''
-	img = plantOrig.copy()
-
-
-	mask = np.zeros(img.shape[:2],np.uint8)
-
-	bgdModel = np.zeros((1,65),np.float64)
-	fgdModel = np.zeros((1,65),np.float64)
-
-	# Using rectangle for extraction
-
-	rect = (685,414,1323,950)
-	cv2.grabCut(img,mask,rect,bgdModel,fgdModel,5,cv2.GC_INIT_WITH_RECT)
-
-	mask2 = np.where((mask==2)|(mask==0),0,1).astype('uint8')
-	img = img*mask2[:,:,np.newaxis]
-
-
-	plantOrig = img
-	'''
-	
-	# END GRABCUT TEST CRAP
-	
-	
-	
-	
-	
-	
-	
-	
-	#################################################################
-	# TEST CODE #
-	#lower_green = (30,60,60)
-	#upper_green = (80,255,255)
-	
 	kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
 	kernelVerySharp = np.array( [[ -1, -1, -1], [ -1, 9, -1], [ -1, -1, -1]], dtype = float)
-
-	sharpOrig = cv2.filter2D(plantOrig, ddepth = -1, kernel = kernelSharp)
-	#cv2.imshow("sharpOrig", sharpOrig)
-	
-	# Has interesting seperation of Colours,
-	# Need to get good ranges for it
-	YUV = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YUV)
-	#cv2.imwrite("./images/yuv.png", YUV)
-	#cv2.imshow("YUV", YUV)
-	
-	sharpenYUV = cv2.filter2D(YUV, ddepth = -1, kernel = kernelSharp)
-	#cv2.imwrite("./images/sharpenyuv.png", sharpenYUV)
-	#cv2.imshow("sharpenYUV", sharpenYUV)
-	
-	
-	LAB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2LAB)
-	#cv2.imwrite("./images/lab.png", LAB)
-	#cv2.imshow("LAB", LAB)
-	
-	sharpenLAB = cv2.filter2D(LAB, ddepth = -1, kernel = kernelSharp)
-	#cv2.imwrite("./images/sharpenlab.png", sharpenLAB)
-	#cv2.imshow("sharpenLAB", sharpenLAB)
-	
-	
-	YCB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YCrCb)
-	#cv2.imwrite("./images/ycb.png", YCB)
-	
-	
-	# whatever this is....
-	#imgYCC = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YCR_CB)
-	#cv2.imwrite("./images/ycc.png", imgYCC)
-	
-	sharpenYCB = cv2.filter2D(YCB, ddepth = -1, kernel = kernelSharp)
-	#cv2.imwrite("./images/sharpenycb.png", sharpenYCB)
-	#cv2.imshow("sharpenYCB", sharpenYCB)
-	
-	
-	# END TEST CODE #
-	#################################################################
 
 	
 	
@@ -582,194 +446,7 @@ def process(plantOrig):
 		count += 1
 	#cv2.imshow("edgeFilteredLoc", edgeFilteredLoc2)
 	
-	
-	
-	
-	
-	
-	
-	
-	####################################################################
-	# TEST CODE
-	
-	
-	edgeHSV = applyCanny(hsv, 30, 200)
-	edgeSharpenHSV = applyCanny(sharpenHSV, 30, 200)
-	
-	edgeYUV = applyCanny(YUV, 30, 200)
-	edgeSharpenYUV = applyCanny(sharpenYUV, 30, 200)
-	
-	edgeLAB = applyCanny(LAB, 30, 200)
-	edgeSharpenLAB = applyCanny(sharpenLAB, 30, 200)
-	
-	edgeYCB = applyCanny(YCB, 30, 200)
-	edgeSharpenYCB = applyCanny(sharpenYCB, 30, 200)
-	
-	#'''
-	#cv2.imshow("HSV", hsv)
-	#cv2.imshow("edgeHSV", edgeHSV)
-	#cv2.imshow("sharpenHSV", sharpenHSV)
-	#cv2.imshow("edgeSharpenHSV", edgeSharpenHSV)
-	#'''
-	
-	#'''
-	#cv2.imshow("YUV", YUV)
-	#cv2.imshow("edgeYUV", edgeYUV)
-	#cv2.imshow("sharpenYUV", sharpenYUV)
-	#cv2.imshow("edgeSharpenYUV", edgeSharpenYUV)
-	#'''
-	
-	#'''
-	#cv2.imshow("LAB", LAB)
-	#cv2.imshow("edgeLAB", edgeLAB)
-	#cv2.imshow("sharpenLAB", sharpenLAB)
-	#cv2.imshow("edgeSharpenLAB", edgeSharpenLAB)
-	#'''
-	
-	#'''
-	#cv2.imshow("YCB", YCB)
-	#cv2.imshow("edgeYCB", edgeYCB)
-	#cv2.imshow("sharpenYCB", sharpenYCB)
-	#cv2.imshow("edgeSharpenYCB", edgeSharpenYCB)
-	#'''
-	
 
-	yuvY = YUV[...,0]
-	yuvU = YUV[...,1]
-	yuvV = YUV[...,2]
-	
-	#cv2.imshow("yuvY", yuvY)
-	#cv2.imshow("yuvU", yuvU)
-	#cv2.imshow("yuvV", yuvV)
-	
-	#tmpGray = cv2.cvtColor(plantImg,cv2.COLOR_BGR2GRAY)
-	#cv2.imshow("tmpGray", tmpGray)
-	
-	
-	
-	
-	
-	# YCB
-	
-	# Original YCB, in grayscale outputs
-	ycbY = YCB[...,0]
-	ycbC = YCB[...,1]
-	ycbB = YCB[...,2]
-	
-	
-	copyRED_YCB = YCB.copy()
-	copyRED_YCB[:,:,0] = 0
-	copyRED_YCB[:,:,1] = 0
-	#cv2.imshow("copyRED_YCB", copyRED_YCB)
-	
-	copyGR_YCB = YCB.copy()
-	copyGR_YCB[:,:,0] = 0
-	copyGR_YCB[:,:,2] = 0
-	#cv2.imshow("copyGR_YCB", copyGR_YCB)
-	
-	copyBL_YCB = YCB.copy()
-	copyBL_YCB[:,:,1] = 0
-	copyBL_YCB[:,:,2] = 0
-	#cv2.imshow("copyBL_YCB", copyBL_YCB)
-	
-	# Trying to get colour representation of YCB colourspace
-	# It failed.
-	#ycbY = YCB[:,:,0]
-	#ycbC = YCB[:,:,1]
-	#ycbB = YCB[:,:,2]
-	
-	#cv2.imshow("ycbY", ycbY)
-	#cv2.imshow("ycbC", ycbC)
-	#cv2.imshow("ycbB", ycbB)
-	
-	
-	cpYCB = YCB.copy()
-	
-	cpYCB[:,:,0] = 0
-	#cpYCB[:,:,1] = 0
-	cpYCB[:,:,2] = 0
-	cpYCB_Y = cpYCB[...,0]
-	cpYCB_C = cpYCB[...,1]
-	cpYCB_B = cpYCB[...,2]
-	
-	ycb_image = cv2.merge([cpYCB_Y, cpYCB_C, cpYCB_B])
-	outYCB = cv2.cvtColor(ycb_image, cv2.COLOR_BGR2YCrCb)
-	cv2.imshow("outYCB", outYCB)
-	
-	
-	
-	
-	# LAB
-	
-	labL = LAB[...,0]
-	labA = LAB[...,1]
-	labB = LAB[...,2]
-	
-	#cv2.imshow("labL", labL)
-	#cv2.imshow("labA", labA)
-	#cv2.imshow("labB", labB)
-	
-	
-	cpLAB = LAB.copy()
-	
-	#cpLAB[:,:,0] = 0
-	cpLAB[:,:,1] = 0
-	cpLAB[:,:,2] = 0
-	cpL = cpLAB[...,0]
-	cpA = cpLAB[...,1]
-	cpB = cpLAB[...,2]
-	
-	lab_image = cv2.merge([cpL, cpA, cpB])
-	
-	outLAB = cv2.cvtColor(lab_image, cv2.COLOR_LAB2BGR)
-	cv2.imshow("outLAB", outLAB)
-	
-	
-	
-	
-	
-	# HSV
-	
-	copyRED_HSV = hsv.copy()
-	copyRED_HSV[:,:,0] = 0
-	copyRED_HSV[:,:,1] = 0
-	#cv2.imshow("copyRED_HSV", copyRED_YCB)
-	
-	copyGR_HSV = hsv.copy()
-	copyGR_HSV[:,:,0] = 0
-	copyGR_HSV[:,:,2] = 0
-	#cv2.imshow("copyGR_HSV", copyGR_HSV)
-	
-	copyBL_HSV = hsv.copy()
-	copyBL_HSV[:,:,1] = 0
-	copyBL_HSV[:,:,2] = 0
-	#cv2.imshow("copyBL_HSV", copyBL_HSV)
-	
-	
-	
-	cpHSV = hsv.copy()
-	
-	#cpHSV[:,:,0] = 0
-	cpHSV[:,:,1] = 0
-	#cpHSV[:,:,2] = 0
-	cpH = cpHSV[...,0]
-	cpS = cpHSV[...,1]
-	cpV = cpHSV[...,2]
-	
-	hsv_image = cv2.merge([cpH, cpS, cpV])
-	
-	#outHSV = cv2.cvtColor(hsv_image, cv2.COLOR_LAB2BGR) # FUCKING USED THIS BEFORE
-	outHSV = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
-	cv2.imshow("outHSV", outHSV)
-
-	# END TEST CODE
-	####################################################################
-
-	
-	
-	
-	
-	
 	
 	# Adds the 2 Canny Edges together, better Countour coverage achieved
 	#
@@ -879,54 +556,6 @@ def process(plantOrig):
 	finalContour = getContoursWrap(contAnd, doubleHSVEdge)
 	cv2.imshow("finalContour", finalContour)
 	
-	'''
-	
-	##############
-	# FIX THIS PORTION TO FIND THE IMAGE CONTOUR
-	
-	#finalContour = getContoursWrap(andMInv, doubleEdge)
-	#cv2.imshow("finalContour", finalContour)
-	
-	
-	final = convertBGRHSV(andMInv)
-	finalHSV = getColourRange(final, lower_green, upper_green)
-	
-	bilatHSV = applyBilateralFilter(andMInv.copy(), 11, 17, 17)
-	filteredHSV = convertBGRHSV(bilatHSV)
-	filteredHSVRange = getColourRange(filteredHSV, lower_green, upper_green)
-
-	finalHSVLoc = getPlantLocation(andMInv.copy(), finalHSV)
-	cv2.imshow("finalHSVLoc", finalHSVLoc)
-	
-	filteredHSVLoc = getPlantLocation(andMInv.copy(), filteredHSVRange)
-	cv2.imshow("filteredHSVLoc", filteredHSVLoc)
-	
-	
-	mergedPlantAreas = mergeImages(finalHSVLoc, filteredHSVLoc, 0.5, 0.5)
-	#cv2.imshow("mergedPlantAreas", mergedPlantAreas)
-	
-	edgeHSVLoc = applyCanny(finalHSVLoc, 30, 200)
-	edgeFilteredHSVLoc = applyCanny(filteredHSVLoc, 30, 200)
-
-
-
-	edgeHSV1 = edgeHSVLoc.copy()
-	edgeHSV2 = edgeFilteredHSVLoc.copy()
-	shapeFinal = andMInv.shape
-
-	doubleHSVEdge = mergeEdges(edgeHSV1, edgeHSV2, shapeFinal)
-	#cv2.imshow("doubleHSVEdge", doubleHSVEdge)
-	
-	
-	finalContour = getContoursWrap(andMInv.copy(), doubleHSVEdge)
-	cv2.imshow("finalContour", finalContour)
-	
-	'''
-	
-	
-	
-	
-	
 	
 	
 	contheight, contwidth = contAnd.shape[:2]
@@ -968,58 +597,6 @@ def process(plantOrig):
 	
 	#cv2.waitKey(0)
 	
-	
-	
-	
-	# www.philipzucker.com/aruco-in-opencv/
-
-	'''
-		drawMarker(...)
-			drawMarker(dictionary, id, sidePixels[, img[, borderBits]]) -> img
-	'''
-	''' 
-	aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
-	print(aruco_dict)
-	# second parameter is id number
-	# last parameter is total image size
-	aru = aruco.drawMarker(aruco_dict, 2, 700)
-	cv2.imwrite("test_marker.jpg", aru)
-	
-	cv2.imshow('aru',aru)
-	#cv2.waitKey(0)
-	#cv2.destroyAllWindows()
-	'''
-	
-	'''
-	frame = plantOrig.copy()
-	#print(frame.shape) #480x640
-
-	# Our operations on the frame come here
-	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-	aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
-	parameters =  aruco.DetectorParameters_create()
-
-	#print(parameters)
-	'''
-	'''    detectMarkers(...)
-		detectMarkers(image, dictionary[, corners[, ids[, parameters[, rejectedI
-		mgPoints]]]]) -> corners, ids, rejectedImgPoints
-		'''
-		#lists of ids and the corners beloning to each id
-	'''
-	corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-	print(corners)
-
-	#It's working.
-	# my problem was that the cellphone put black all around it. The alrogithm
-	# depends very much upon finding rectangular black blobs
-	
-	gray = aruco.drawDetectedMarkers(gray, corners)
-	
-	#print(rejectedImgPoints)
-	# Display the resulting frame
-	cv2.imshow('frame',gray)
-	'''
 	
 	if(showAll):
 		#print (count)
