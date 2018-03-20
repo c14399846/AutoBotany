@@ -36,7 +36,7 @@ def decode(im) :
 	
   return decodedObjects
  
- 
+
 # Display barcode and QR code location  
 def display(im, decodedObjects):
  
@@ -91,7 +91,8 @@ if __name__ == '__main__':
   # Read image
   #im = cv2.imread('qrcode.png')
   #im = cv2.imread('PEA_16_QR.png')
-  im = cv2.imread('PEA_16_QR_DISTORT3.png')
+  #im = cv2.imread('PEA_16_QR_DISTORT3.png')
+  im = cv2.imread('google.png')
   #im = cv2.imread('plant1.png')
  
   decodedObjects = decode(im)

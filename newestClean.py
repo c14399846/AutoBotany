@@ -86,7 +86,7 @@ def getColourRange(image, lower, upper):
 # Seperates colours in image that match the mask
 def getPlantLocation(image, range):
 
-	plantLocation = cv2.bitwise_and(image, image, mask = range)
+	plantLocation = cv2.bitwise_and(image.copy(), image, mask = range)
 	
 	return plantLocation
 
@@ -377,7 +377,7 @@ def process(plantOrig):
 		count += 1
 	#cv2.imwrite("./images/hsv.png", hsv)
 	cv2.imshow("hsv", hsv)
-	#cv2.imshow("hsvrange", hsvrange)
+	cv2.imshow("hsvrange", hsvrange)
 
 	
 	
@@ -389,7 +389,7 @@ def process(plantOrig):
 		processedImages[count].append(origImgLoc)
 		processedImages[count].append("origImgLoc")
 		count += 1
-	#cv2.imshow("origImgLoc", origImgLoc)
+	cv2.imshow("origImgLoc", origImgLoc)
 	
 	
 	
@@ -479,27 +479,31 @@ def process(plantOrig):
 	
 	# Background, support structures, and dirt pixels
 	
+	#conResCopy = origImgLoc.copy()
+	conResCopy = contourRes.copy()
 	
-	contHSV = convertBGRHSV(contourRes.copy())
-	cv2.imshow("contHSV", contHSV)
+	contHSV = convertBGRHSV(conResCopy)
+	#cv2.imshow("contHSV", contHSV)
 	contHSVRange = getColourRange(contHSV, lower_bg, upper_bg)
-	contImgLoc = getPlantLocation(contourRes.copy(), contHSVRange)
+	#cv2.imshow("contHSVRange", contHSVRange)
+	contImgLoc = getPlantLocation(conResCopy, contHSVRange)
 	#cv2.imshow("contImgLoc", contImgLoc)
 	
 	
 	dirtHSV = contHSV.copy()
 	dirtHSVRange = getColourRange(dirtHSV, lower_dirt, upper_dirt)
-	dirtImgLoc = getPlantLocation(contourRes.copy(), dirtHSVRange)
+	dirtImgLoc = getPlantLocation(conResCopy, dirtHSVRange)
 	#cv2.imshow("dirtImgLoc", dirtImgLoc)
 
 	
 	supportHSV = contHSV.copy()
 	supportHSVRange = getColourRange(supportHSV, lower_support, upper_support)
-	supportImgLoc = getPlantLocation(contourRes.copy(), supportHSVRange)
+	supportImgLoc = getPlantLocation(conResCopy, supportHSVRange)
 	#cv2.imshow("supportImgLoc", supportImgLoc)
 
 	
-	
+	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
 	
 	
 	
@@ -509,12 +513,13 @@ def process(plantOrig):
 	# Get Width and Height data
 	
 	bgDirt = cv2.add(contImgLoc,dirtImgLoc)
-	cv2.imshow("bgDirt", bgDirt)
+	#cv2.imshow("bgDirt", bgDirt)
 	
 	allNonPlant = cv2.add(bgDirt,supportImgLoc)
-	cv2.imshow("allNonPlant", allNonPlant)
+	#cv2.imshow("allNonPlant", allNonPlant)
 	
 	grayNon = cv2.cvtColor(allNonPlant, cv2.COLOR_BGR2GRAY)
+	#cv2.imshow("grayNon", grayNon)
 	
 	ret, blkmask = cv2.threshold(grayNon, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV)
 	blkmask_inv = cv2.bitwise_not(blkmask)
@@ -523,6 +528,11 @@ def process(plantOrig):
 	#cv2.imshow("blkmask_inv", blkmask_inv)
 	
 	cont = contourRes.copy()
+	#cv2.imshow("cont", cont)
+	
+	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
+	
 	contAnd = cv2.bitwise_and(cont, cont, mask = blkmask)
 	#cv2.imshow("contAnd", contAnd)
 	
@@ -551,7 +561,8 @@ def process(plantOrig):
 	doubleHSVEdge = mergeEdges(edgeHSV1, edgeHSV2, shapeFinal)
 	cv2.imshow("doubleHSVEdge", doubleHSVEdge)
 	
-	
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
 	
 	finalContour = getContoursWrap(contAnd, doubleHSVEdge)
 	cv2.imshow("finalContour", finalContour)
@@ -572,30 +583,33 @@ def process(plantOrig):
 	# https://www.learnopencv.com/barcode-and-qr-code-scanner-using-zbar-and-opencv/
 	
 	decodedObjects = decode(plantOrig.copy())
-	#disp = display(plantOrig.copy(), decodedObjects)
-	#cv2.imshow('disp', disp)
+	
+	if decodedObjects is not None and len(decodedObjects) > 0:
+	
+		#disp = display(plantOrig.copy(), decodedObjects)
+		#cv2.imshow('disp', disp)
 
-	print(decodedObjects[0].data)
+		print(decodedObjects[0].data)
 	
-	#qr = qrcodeDimensions(plantOrig.copy(), decodedObjects)
-	#cv2.imshow('qr', qr)
+		#qr = qrcodeDimensions(plantOrig.copy(), decodedObjects)
+		#cv2.imshow('qr', qr)
 
-	qrX, qrY = qrcodeDimensions(decodedObjects)
-	print("qrX:" + str(qrX) + "\n")
-	print("qrY:" + str(qrY) + "\n")
-	
-	
-	cm = 5
-	
-	# how Many pixels per centimetre
-	cmWidth = qrX / cm
-	cmHeight = qrY / cm
-	
-	
-	print("Plant Width: " + str(contwidth / cmWidth) + "cm \n")
-	print("Plant Height: " + str(contheight / cmHeight) + "cm \n")
-	
-	#cv2.waitKey(0)
+		qrX, qrY = qrcodeDimensions(decodedObjects)
+		print("qrX:" + str(qrX) + "\n")
+		print("qrY:" + str(qrY) + "\n")
+		
+		
+		cm = 5
+		
+		# how Many pixels per centimetre
+		cmWidth = qrX / cm
+		cmHeight = qrY / cm
+		
+		
+		print("Plant Width: " + str(contwidth / cmWidth) + "cm \n")
+		print("Plant Height: " + str(contheight / cmHeight) + "cm \n")
+		
+		#cv2.waitKey(0)
 	
 	
 	if(showAll):
@@ -644,30 +658,32 @@ if __name__ == '__main__':
 	numberPlants = 1
 
 	#file = easygui.fileopenbox()
-	plantImg = readInPlant("PEA_16_QR_RANDOM_FLAT.png")
+	#plantImg = readInPlant("PEA_16_QR_RANDOM_FLAT.png")
 	#plantImg = readInPlant("PEA_16_QR_DISTORT3.png")
-	#plantImg = readInPlant("PEA_18.png")
+	plantImg = readInPlant("PEA_18.png")
 	#plantImg = readInPlant("plantqr.jpg")
 
 
-	height, width = plantImg.shape[:2]
-	plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
+	if plantImg is not None:
+		height, width = plantImg.shape[:2]
+		#plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
 
 
+		cv2.imshow("plantImg", plantImg)
 
-	cv2.imshow("plantImg", plantImg)
+		# Processing pipeline
+		processed, pContours = process(plantImg)
 
-	# Processing pipeline
-	processed, pContours = process(plantImg)
-
-	cv2.imshow("processed", processed)
-	cv2.imshow('pContours', pContours)
+		cv2.imshow("processed", processed)
+		cv2.imshow('pContours', pContours)
 
 
-	cv2.waitKey(0)
-	cv2.destroyAllWindows()
-	
-	cv2.imwrite('./images/final.png', processed)
-
+		cv2.waitKey(0)
+		cv2.destroyAllWindows()
+		
+		cv2.imwrite('./images/final.png', processed)
+	else :
+		print("No Image given\n")
+		sys.exit(0)
 
 #cv2.waitKey(0)
