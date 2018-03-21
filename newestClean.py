@@ -377,10 +377,171 @@ def process(plantOrig):
 		count += 1
 	#cv2.imwrite("./images/hsv.png", hsv)
 	cv2.imshow("hsv", hsv)
-	cv2.imshow("hsvrange", hsvrange)
+	#cv2.imshow("hsvrange", hsvrange)
 
 	
 	
+	
+	# ranges for support materials
+	# Orig
+	#lower_yuv = (75, 95, 140)
+	#upper_yuv = (150, 110, 150)
+	
+	lower_yuv = (75, 95, 140)
+	upper_yuv = (150, 110, 150)
+	
+	YUV = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YUV)
+	cv2.imshow("YUV", YUV)
+	yuvrange = getColourRange(YUV, lower_yuv, upper_yuv)
+	cv2.imshow("yuvrange", yuvrange)
+	
+	#sharpenYUV = cv2.filter2D(YUV, ddepth = -1, kernel = kernelSharp)
+	#cv2.imshow("sharpenYUV", sharpenYUV)
+	
+	
+	# Orig
+	#lower_lab = (80, 110, 160)
+	#upper_lab = (165, 125, 175)
+	
+	lower_lab = (80, 110, 160)
+	upper_lab = (165, 125, 175)
+	
+	LAB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2LAB)
+	cv2.imshow("LAB", LAB)
+	labrange = getColourRange(LAB, lower_lab, upper_lab)
+	cv2.imshow("labrange", labrange)
+	
+	#sharpenLAB = cv2.filter2D(LAB, ddepth = -1, kernel = kernelSharp)
+	#cv2.imshow("sharpenLAB", sharpenLAB)
+	
+	
+	# Orig
+	#lower_ycb = (60, 125, 80)
+	#upper_ycb = (150, 145, 100)
+	
+	lower_ycb = (60, 128, 94)
+	upper_ycb = (150, 145, 100)
+	
+	YCB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YCrCb)
+	cv2.imshow("YCB", YCB)
+	ycbrange = getColourRange(YCB, lower_ycb, upper_ycb)
+	cv2.imshow("ycbrange", ycbrange)
+	
+	# whatever this is....
+	#imgYCC = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YCR_CB)
+	#cv2.imshow("imgYCC", imgYCC)
+	
+	#sharpenYCB = cv2.filter2D(YCB, ddepth = -1, kernel = kernelSharp)
+	
+	
+	
+	
+	
+	
+	#############################################################
+	# TEST
+	'''
+	contHSV = hsv.copy()
+	origCopy = plantOrig.copy()
+	
+	contHSVRange = getColourRange(contHSV, lower_bg, upper_bg)
+	#cv2.imshow("contHSVRange", contHSVRange)
+	contImgLoc = getPlantLocation(origCopy, contHSVRange)
+	#cv2.imshow("contImgLoc", contImgLoc)
+	
+	
+	dirtHSVRange = getColourRange(contHSV, lower_dirt, upper_dirt)
+	dirtImgLoc = getPlantLocation(origCopy, dirtHSVRange)
+	#cv2.imshow("dirtImgLoc", dirtImgLoc)
+
+	
+	supportHSVRange = getColourRange(contHSV, lower_support, upper_support)
+	supportImgLoc = getPlantLocation(origCopy, supportHSVRange)
+	#cv2.imshow("supportImgLoc", supportImgLoc)
+
+	
+	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
+	
+	
+	
+	# Add the background, support structures, and dirt pixels together
+	# Make a mask from them
+	# Use that mask to remove all non-plant pixels
+	# Get Width and Height data
+	
+	bgDirt = cv2.add(contImgLoc,dirtImgLoc)
+	#cv2.imshow("bgDirt", bgDirt)
+	
+	allNonPlant = cv2.add(bgDirt,supportImgLoc)
+	cv2.imshow("allNonPlant", allNonPlant)
+	
+	grayNon = cv2.cvtColor(allNonPlant, cv2.COLOR_BGR2GRAY)
+	cv2.imshow("grayNon", grayNon)
+	
+	ret, blkmask = cv2.threshold(grayNon, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV)
+	blkmask_inv = cv2.bitwise_not(blkmask)
+	
+	#cv2.imshow("blkmask", blkmask)
+	#cv2.imshow("blkmask_inv", blkmask_inv)
+	
+	cont = plantOrig.copy()
+	#cv2.imshow("cont", cont)
+	
+	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
+	
+	contAnd = cv2.bitwise_and(cont, cont, mask = blkmask)
+	cv2.imshow("contAnd", contAnd)
+	
+	
+	
+	
+	
+	
+	
+	cannyContAnd = applyCanny(contAnd.copy(), 30, 200)
+	
+	blur = cv2.GaussianBlur(contAnd.copy(),(5,5),0)
+	blurContAnd = applyCanny(blur, 30, 200)
+
+	edgeHSV1 = cannyContAnd.copy()
+	edgeHSV2 = blurContAnd.copy()
+	shapeFinal = contAnd.shape
+
+	doubleHSVEdge = mergeEdges(edgeHSV1, edgeHSV2, shapeFinal)
+	cv2.imshow("doubleHSVEdge", doubleHSVEdge)
+	
+	finalContour = getContoursWrap(contAnd, doubleHSVEdge)
+	cv2.imshow("finalContour", finalContour)
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	finalhsv = convertBGRHSV(contAnd.copy())
+	cv2.imshow("finalhsv", finalhsv)
+	
+	finalhsvrange = getColourRange(finalhsv, lower_green, upper_green)
+	cv2.imshow("finalhsvrange", finalhsvrange)
+	
+	plantLoc = getPlantLocation(plantOrig, finalhsvrange)
+	cv2.imshow("plantLoc", plantLoc)
+	
+	
+	
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
+	'''
+	# END TEST
+	#######################################################################
 	
 	# Finds Plant Pixels matching the Mask
 	origImgLoc = getPlantLocation(plantOrig, hsvrange)
@@ -389,11 +550,11 @@ def process(plantOrig):
 		processedImages[count].append(origImgLoc)
 		processedImages[count].append("origImgLoc")
 		count += 1
-	cv2.imshow("origImgLoc", origImgLoc)
+	#cv2.imshow("origImgLoc", origImgLoc)
 	
 	
 	
-	sharpenHSV = cv2.filter2D(hsv, ddepth = -1, kernel = kernelSharp)
+	#sharpenHSV = cv2.filter2D(hsv, ddepth = -1, kernel = kernelSharp)
 	#cv2.imshow("sharpenHSV", sharpenHSV)
 	
 	# Applies filters to blend colours
@@ -518,7 +679,46 @@ def process(plantOrig):
 	allNonPlant = cv2.add(bgDirt,supportImgLoc)
 	#cv2.imshow("allNonPlant", allNonPlant)
 	
-	grayNon = cv2.cvtColor(allNonPlant, cv2.COLOR_BGR2GRAY)
+	
+	'''
+	# Orig
+	#lower_yuv2 = (75, 90, 140)
+	#upper_yuv2 = (150, 110, 150)
+	
+	# Lost stem detail, and some leaf
+	#lower_yuv2 = (65, 90, 129)
+	#upper_yuv2 = (150, 110, 150)
+	
+	lower_yuv2 = (70, 90, 129)
+	upper_yuv2 = (150, 110, 150)
+	
+	YUV2 = cv2.cvtColor(conResCopy, cv2.COLOR_BGR2YUV)
+	cv2.imshow("YUVcon", YUV2)
+	yuvrange2 = getColourRange(YUV2, lower_yuv2, upper_yuv2)
+	cv2.imshow("yurangecon", yuvrange2)
+	yuvSupportLoc = getPlantLocation(conResCopy, yuvrange2)
+	
+	yuvnon = cv2.add(allNonPlant,yuvSupportLoc)
+	cv2.imshow("yuvnon", yuvnon)
+	
+	'''
+	
+	
+	
+	lower_ycb2 = (60, 128, 94)
+	upper_ycb2 = (150, 145, 100)
+	
+	YCB2 = cv2.cvtColor(conResCopy, cv2.COLOR_BGR2YCrCb)
+	cv2.imshow("YCBcon", YCB2)
+	ycbrange2 = getColourRange(YCB2, lower_ycb2, upper_ycb2)
+	cv2.imshow("ycbrangecon", ycbrange2)
+	ycbSupportLoc = getPlantLocation(conResCopy, ycbrange2)
+	
+	ycbnon = cv2.add(allNonPlant,ycbSupportLoc)
+	cv2.imshow("ycbnon", ycbnon)
+	
+	
+	grayNon = cv2.cvtColor(ycbnon, cv2.COLOR_BGR2GRAY)
 	#cv2.imshow("grayNon", grayNon)
 	
 	ret, blkmask = cv2.threshold(grayNon, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV)
@@ -534,7 +734,7 @@ def process(plantOrig):
 	#cv2.destroyAllWindows()
 	
 	contAnd = cv2.bitwise_and(cont, cont, mask = blkmask)
-	#cv2.imshow("contAnd", contAnd)
+	cv2.imshow("contAnd", contAnd)
 	
 	
 	
@@ -549,8 +749,8 @@ def process(plantOrig):
 	
 	
 	
-	bilatCont = applyBilateralFilter(contAnd.copy(), 11, 17, 17)
-	bilatContAnd = applyCanny(bilatCont, 30, 200)
+	#bilatCont = applyBilateralFilter(contAnd.copy(), 11, 17, 17)
+	#bilatContAnd = applyCanny(bilatCont, 30, 200)
 	#cv2.imshow("bilatContAnd", bilatContAnd)
 	
 	edgeHSV1 = cannyContAnd.copy()
@@ -658,15 +858,16 @@ if __name__ == '__main__':
 	numberPlants = 1
 
 	#file = easygui.fileopenbox()
-	#plantImg = readInPlant("PEA_16_QR_RANDOM_FLAT.png")
+	#plantImg = readInPlant("PEA_14.png")
+	plantImg = readInPlant("PEA_16_QR_RANDOM_FLAT.png")
 	#plantImg = readInPlant("PEA_16_QR_DISTORT3.png")
-	plantImg = readInPlant("PEA_18.png")
+	#plantImg = readInPlant("PEA_18.png")
 	#plantImg = readInPlant("plantqr.jpg")
 
 
 	if plantImg is not None:
 		height, width = plantImg.shape[:2]
-		#plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
+		plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
 
 
 		cv2.imshow("plantImg", plantImg)
