@@ -376,7 +376,7 @@ def process(plantOrig):
 		processedImages[count].append("hsvrange")
 		count += 1
 	#cv2.imwrite("./images/hsv.png", hsv)
-	cv2.imshow("hsv", hsv)
+	#cv2.imshow("hsv", hsv)
 	#cv2.imshow("hsvrange", hsvrange)
 
 	
@@ -391,9 +391,9 @@ def process(plantOrig):
 	upper_yuv = (150, 110, 150)
 	
 	YUV = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YUV)
-	cv2.imshow("YUV", YUV)
+	#cv2.imshow("YUV", YUV)
 	yuvrange = getColourRange(YUV, lower_yuv, upper_yuv)
-	cv2.imshow("yuvrange", yuvrange)
+	#cv2.imshow("yuvrange", yuvrange)
 	
 	#sharpenYUV = cv2.filter2D(YUV, ddepth = -1, kernel = kernelSharp)
 	#cv2.imshow("sharpenYUV", sharpenYUV)
@@ -407,9 +407,9 @@ def process(plantOrig):
 	upper_lab = (165, 125, 175)
 	
 	LAB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2LAB)
-	cv2.imshow("LAB", LAB)
+	#cv2.imshow("LAB", LAB)
 	labrange = getColourRange(LAB, lower_lab, upper_lab)
-	cv2.imshow("labrange", labrange)
+	#cv2.imshow("labrange", labrange)
 	
 	#sharpenLAB = cv2.filter2D(LAB, ddepth = -1, kernel = kernelSharp)
 	#cv2.imshow("sharpenLAB", sharpenLAB)
@@ -423,9 +423,9 @@ def process(plantOrig):
 	upper_ycb = (150, 145, 100)
 	
 	YCB = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YCrCb)
-	cv2.imshow("YCB", YCB)
+	#cv2.imshow("YCB", YCB)
 	ycbrange = getColourRange(YCB, lower_ycb, upper_ycb)
-	cv2.imshow("ycbrange", ycbrange)
+	#cv2.imshow("ycbrange", ycbrange)
 	
 	# whatever this is....
 	#imgYCC = cv2.cvtColor(plantOrig, cv2.COLOR_BGR2YCR_CB)
@@ -709,13 +709,13 @@ def process(plantOrig):
 	upper_ycb2 = (150, 145, 100)
 	
 	YCB2 = cv2.cvtColor(conResCopy, cv2.COLOR_BGR2YCrCb)
-	cv2.imshow("YCBcon", YCB2)
+	#cv2.imshow("YCBcon", YCB2)
 	ycbrange2 = getColourRange(YCB2, lower_ycb2, upper_ycb2)
-	cv2.imshow("ycbrangecon", ycbrange2)
+	#cv2.imshow("ycbrangecon", ycbrange2)
 	ycbSupportLoc = getPlantLocation(conResCopy, ycbrange2)
 	
 	ycbnon = cv2.add(allNonPlant,ycbSupportLoc)
-	cv2.imshow("ycbnon", ycbnon)
+	#cv2.imshow("ycbnon", ycbnon)
 	
 	
 	grayNon = cv2.cvtColor(ycbnon, cv2.COLOR_BGR2GRAY)
@@ -759,10 +759,10 @@ def process(plantOrig):
 	shapeFinal = contAnd.shape
 
 	doubleHSVEdge = mergeEdges(edgeHSV1, edgeHSV2, shapeFinal)
-	cv2.imshow("doubleHSVEdge", doubleHSVEdge)
+	#cv2.imshow("doubleHSVEdge", doubleHSVEdge)
 	
-	cv2.waitKey(0)
-	cv2.destroyAllWindows()
+	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
 	
 	finalContour = getContoursWrap(contAnd, doubleHSVEdge)
 	cv2.imshow("finalContour", finalContour)
@@ -818,7 +818,8 @@ def process(plantOrig):
 			cv2.imshow(processedImages[i][1], processedImages[i][0])
 	cv2.waitKey(0)
 	
-	return contourRes, mergedPlantAreas
+	#return contourRes, mergedPlantAreas
+	return contourRes, contAnd
 
 
 
@@ -858,10 +859,12 @@ if __name__ == '__main__':
 	numberPlants = 1
 
 	#file = easygui.fileopenbox()
+	#plantImg = readInPlant("pea_18_1.png")
+	#plantImg = readInPlant("day19.png")
 	#plantImg = readInPlant("PEA_14.png")
-	plantImg = readInPlant("PEA_16_QR_RANDOM_FLAT.png")
+	#plantImg = readInPlant("PEA_16_QR_RANDOM_FLAT.png")
 	#plantImg = readInPlant("PEA_16_QR_DISTORT3.png")
-	#plantImg = readInPlant("PEA_18.png")
+	plantImg = readInPlant("PEA_18.png")
 	#plantImg = readInPlant("plantqr.jpg")
 
 
