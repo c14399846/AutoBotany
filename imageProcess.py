@@ -1,17 +1,14 @@
 from __future__ import print_function
-import pyzbar.pyzbar as pyzbar
-
+import pyzbar.pyzbar as pyzbar # NEED TO PIP INSTALL THIS FROM THE GITHUB, OR ELSEWHERE
 
 import sys
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 from matplotlib import image as image
-import easygui
-
-import cv2.aruco as aruco
-
-from DrawOver import DrawOver
+#import easygui
+#import cv2.aruco as aruco
+#from DrawOver import DrawOver
 
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -27,6 +24,11 @@ upper_dirt = (30, 255, 115)
 
 lower_support = (19, 67, 70)
 upper_support = (30, 252, 253)
+
+
+# Number of plants in image (Can be defined by user later on)
+numberPlants = 1
+
 
 
 # Read in plant image
@@ -370,11 +372,13 @@ def process(plantOrig):
 	# Gets colours in a certain range
 	hsv = convertBGRHSV(plantOrig)
 	hsvrange = getColourRange(hsv, lower_green, upper_green)
+	'''
 	if(addhsvrange):
 		processedImages.append([])
 		processedImages[count].append(hsvrange)
 		processedImages[count].append("hsvrange")
 		count += 1
+	'''
 	#cv2.imwrite("./images/hsv.png", hsv)
 	#cv2.imshow("hsv", hsv)
 	#cv2.imshow("hsvrange", hsvrange)
@@ -430,11 +434,13 @@ def process(plantOrig):
 	
 	# Finds Plant Pixels matching the Mask
 	origImgLoc = getPlantLocation(plantOrig, hsvrange)
+	'''
 	if(addorigImgLoc):
 		processedImages.append([])
 		processedImages[count].append(origImgLoc)
 		processedImages[count].append("origImgLoc")
 		count += 1
+	'''
 	#cv2.imshow("origImgLoc", origImgLoc)
 	
 	
@@ -450,21 +456,25 @@ def process(plantOrig):
 	# Convert Filtered image to HSV, get colour range for mask
 	filtered = convertBGRHSV(bilateral)
 	filteredRange = getColourRange(filtered, lower_green, upper_green)
+	'''
 	if(addfilteredRange):
 		processedImages.append([])
 		processedImages[count].append(filteredRange)
 		processedImages[count].append("filteredRange")
 		count += 1
+	'''
 	#cv2.imshow("addfilteredRange", addfilteredRange)
 	
 	
 	# Finds Plant Pixels matching the Filtered Mask
 	filteredImgLoc = getPlantLocation(plantOrig, filteredRange)
+	'''
 	if(addfilteredImgLoc):
 		processedImages.append([])
 		processedImages[count].append(filteredImgLoc)
 		processedImages[count].append("filteredImgLoc")
 		count += 1
+	'''
 	#cv2.imshow("filteredImgLoc", filteredImgLoc)
 	
 	
@@ -474,22 +484,26 @@ def process(plantOrig):
 	
 	# Gets Canny Edges of Plant Pixels
 	edgeLoc = applyCanny(origImgLoc, 30, 200)
+	'''
 	if(addedgeLoc):
 		processedImages.append([])
 		processedImages[count].append(edgeLoc)
 		processedImages[count].append("edgeLoc")
 		count += 1
+	'''
 	#cv2.imshow("edgeLoc", edgeLoc)
 	
 	
 	
 	# Gets Canny Edges of Filtered Plant Pixels
 	edgeFilteredLoc = applyCanny(filteredImgLoc, 30, 200)
+	'''
 	if(addedgeFilteredLoc):
 		processedImages.append([])
 		processedImages[count].append(edgeFilteredLoc)
 		processedImages[count].append("edgeFilteredLoc")
 		count += 1
+	'''
 	#cv2.imshow("edgeFilteredLoc", edgeFilteredLoc2)
 	
 
@@ -503,21 +517,25 @@ def process(plantOrig):
 	shape = plantOrig.shape
 	
 	doubleEdge = mergeEdges(edge1, edge2, shape)
+	'''
 	if(adddoubleEdge):
 		processedImages.append([])
 		processedImages[count].append(doubleEdge)
 		processedImages[count].append("doubleEdge")
 		count += 1
+	'''
 	#cv2.imshow("doubleEdge", doubleEdge)
 	
 	
 	# Finds Contours from Both Edges
 	contourRes = getContours(plantOrig, doubleEdge)
+	'''
 	if(addcontourRes):
 		processedImages.append([])
 		processedImages[count].append(contourRes)
 		processedImages[count].append("contourRes")
 		count += 1
+	'''
 	#cv2.imshow("contourRes", contourRes)
 	#cv2.waitKey(0)
 	
@@ -593,7 +611,7 @@ def process(plantOrig):
 	#cv2.destroyAllWindows()
 	
 	contAnd = cv2.bitwise_and(cont, cont, mask = blkmask)
-	cv2.imshow("contAnd", contAnd)
+	#cv2.imshow("contAnd", contAnd)
 	
 	
 	
@@ -619,13 +637,13 @@ def process(plantOrig):
 	#cv2.destroyAllWindows()
 	
 	finalContour = getContoursWrap(contAnd, doubleHSVEdge)
-	cv2.imshow("finalContour", finalContour)
+	#cv2.imshow("finalContour", finalContour)
 	
 	
 	
 	contheight, contwidth = contAnd.shape[:2]
-	print("contheight:" + str(contheight) + "\n")
-	print("contwidth:" + str(contwidth) + "\n")
+	#print("contheight:" + str(contheight) + "\n")
+	#print("contwidth:" + str(contwidth) + "\n")
 	
 	
 	
@@ -643,14 +661,14 @@ def process(plantOrig):
 		#disp = display(plantOrig.copy(), decodedObjects)
 		#cv2.imshow('disp', disp)
 
-		print(decodedObjects[0].data)
+		#print(decodedObjects[0].data)
 	
 		#qr = qrcodeDimensions(plantOrig.copy(), decodedObjects)
 		#cv2.imshow('qr', qr)
 
 		qrX, qrY = qrcodeDimensions(decodedObjects)
-		print("qrX:" + str(qrX) + "\n")
-		print("qrY:" + str(qrY) + "\n")
+		#print("qrX:" + str(qrX) + "\n")
+		#print("qrY:" + str(qrY) + "\n")
 		
 		
 		cm = 5
@@ -663,11 +681,11 @@ def process(plantOrig):
 		print("Plant Width: " + str(contwidth / cmWidth) + "cm \n")
 		print("Plant Height: " + str(contheight / cmHeight) + "cm \n")
 	
-	
+	'''
 	if(showAll):
 		for i in range(count):
 			cv2.imshow(processedImages[i][1], processedImages[i][0])
-	
+	'''
 	#cv2.waitKey(0)
 	
 	#return contourRes, mergedPlantAreas
@@ -677,17 +695,9 @@ def process(plantOrig):
 
 
 
-
-
-
-
-
-# STARTS HERE
-# OPENS FILE / SOMEHOW GETS FILE
-# FROM STORAGE, OR FROM CAMERA*
-# *(Need to add camera operations, maybe)
-if __name__ == '__main__':
-
+def main(argv):
+	
+	'''
 	# Set bool to append / not append images to list
 	addhsvrange = False
 	addlab = False
@@ -699,16 +709,15 @@ if __name__ == '__main__':
 	addedgeLoc = False
 	addedgeFilteredLoc = False
 	adddoubleEdge = False
-
-	#addcontour = True
-	#addcontourFiltered = True
 	addcontourRes = False
 
 	# Set bool to Show all images added to list
 	showAll = False
 
+	'''
+	
 	# Number of plants in image (Can be defined by user later on)
-	numberPlants = 1
+	#numberPlants = 1
 
 	#file = easygui.fileopenbox()
 	
@@ -717,8 +726,11 @@ if __name__ == '__main__':
 	#plantImg = readInPlant("PEA_14.png")
 	#plantImg = readInPlant("PEA_16_QR_RANDOM_FLAT.png")
 	#plantImg = readInPlant("PEA_16_QR_DISTORT3.png")
-	plantImg = readInPlant("PEA_18.png")
+	#plantImg = readInPlant("PEA_18.png")
 	#plantImg = readInPlant("plantqr.jpg")
+	
+	
+	plantImg = readInPlant(argv)
 
 
 	if plantImg is not None:
@@ -726,24 +738,48 @@ if __name__ == '__main__':
 		plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
 
 
-		cv2.imshow("plantImg", plantImg)
+		#cv2.imshow("plantImg", plantImg)
 
 		# Processing pipeline
 		processed, pContours = process(plantImg)
 
-		cv2.imshow("processed", processed)
-		cv2.imshow('pContours', pContours)
+		#cv2.imshow("processed", processed)
+		#cv2.imshow('pContours', pContours)
 
 
-		cv2.waitKey(0)
-		cv2.destroyAllWindows()
+		#cv2.waitKey(0)
+		#cv2.destroyAllWindows()
 		
-		cv2.imwrite('./images/final.png', processed)
+		#cv2.imwrite('./images/final.png', processed)
+		
+		#directory = '/home/image/images/'
+		directory = './images/'
+		
+		imgName = 'processed.png'
+		imgContoursName = 'pContours.png'
+		
+		
+		outputFile = directory + imgName
+		outputContoursFile = directory + imgContoursName
+		
+		cv2.imwrite(outputFile, processed)
+		cv2.imwrite(outputContoursFile, pContours)
 		
 		print("\nImage saved\n")
-		
+		sys.exit(0)
 	else :
 		print("No Image given\n")
 		sys.exit(0)
 
 #cv2.waitKey(0)
+
+
+
+
+# STARTS HERE
+# OPENS FILE / SOMEHOW GETS FILE
+# FROM STORAGE, OR FROM CAMERA*
+# *(Need to add camera operations, maybe)
+if __name__ == '__main__':
+
+	main(sys.argv[1])
