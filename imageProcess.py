@@ -1,15 +1,14 @@
 from __future__ import print_function
-import pyzbar.pyzbar as pyzbar # NEED TO PIP INSTALL THIS FROM THE GITHUB, OR ELSEWHERE
+import pyzbar.pyzbar as pyzbar
 
 import sys
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
 from matplotlib import image as image
-#import easygui
-#import cv2.aruco as aruco
-#from DrawOver import DrawOver
 
+
+import os
+import time
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 lower_green = (30,60,60) # Original, some patches, little 'Noise'
@@ -265,10 +264,11 @@ def decode(im) :
 	decodedObjects = pyzbar.decode((gray.tobytes(), width, height))
  
 	# Print results
+	'''
 	for obj in decodedObjects:
 		print('Type : ', obj.type)
 		print('Data : ', obj.data,'\n')
-	
+	'''
 	return decodedObjects
 
 
@@ -279,7 +279,7 @@ def display(im, decodedObjects):
 	# Loop over all decoded objects
 	for decodedObject in decodedObjects: 
 		points = decodedObject.rect
-		print(points)
+		#print(points)
 
 		# If the points do not form a quad, find convex hull
 		if len(points) > 4 : 
@@ -656,6 +656,8 @@ def process(plantOrig):
 	
 	decodedObjects = decode(plantOrig.copy())
 	
+	plantMeasurements = []
+	
 	if decodedObjects is not None and len(decodedObjects) > 0:
 	
 		#disp = display(plantOrig.copy(), decodedObjects)
@@ -677,9 +679,11 @@ def process(plantOrig):
 		cmWidth = qrX / cm
 		cmHeight = qrY / cm
 		
+		# Returns values for plant data
+		plantMeasurements = [cmWidth, cmHeight]
 		
-		print("Plant Width: " + str(contwidth / cmWidth) + "cm \n")
-		print("Plant Height: " + str(contheight / cmHeight) + "cm \n")
+		#print("Plant Width: " + str(contwidth / cmWidth) + "cm \n")
+		#print("Plant Height: " + str(contheight / cmHeight) + "cm \n")
 	
 	'''
 	if(showAll):
@@ -689,7 +693,7 @@ def process(plantOrig):
 	#cv2.waitKey(0)
 	
 	#return contourRes, mergedPlantAreas
-	return contourRes, contAnd
+	return contourRes, contAnd, plantMeasurements
 
 
 
@@ -729,11 +733,20 @@ def main(argv):
 	#plantImg = readInPlant("PEA_18.png")
 	#plantImg = readInPlant("plantqr.jpg")
 	
-	
-	plantImg = readInPlant(argv)
+	plantImg = None
 
+	while not os.path.exists(argv):
+		time.sleep(1)
+
+	if os.path.isfile(argv):
+		#plantImg = cv2.imread(argv)
+		plantImg = readInPlant(argv)
+	else:
+		raise ValueError("Not a file!")
+	
 
 	if plantImg is not None:
+		
 		height, width = plantImg.shape[:2]
 		plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
 
@@ -741,35 +754,43 @@ def main(argv):
 		#cv2.imshow("plantImg", plantImg)
 
 		# Processing pipeline
-		processed, pContours = process(plantImg)
+		processed, pContours, pMeasurements = process(plantImg)
 
 		#cv2.imshow("processed", processed)
 		#cv2.imshow('pContours', pContours)
 
-
 		#cv2.waitKey(0)
 		#cv2.destroyAllWindows()
-		
-		#cv2.imwrite('./images/final.png', processed)
 		
 		#directory = '/home/image/images/'
 		directory = './images/'
 		
+		#origPlant = 'orig.png'
 		imgName = 'processed.png'
 		imgContoursName = 'pContours.png'
 		
-		
+		#origFile = directory + origPlant
 		outputFile = directory + imgName
 		outputContoursFile = directory + imgContoursName
 		
+		#cv2.imwrite(origFile, plantImg)
 		cv2.imwrite(outputFile, processed)
 		cv2.imwrite(outputContoursFile, pContours)
 		
-		print("\nImage saved\n")
-		sys.exit(0)
+		# Returns values to the Node JS server with use of 'print()'
+		print("Image saved")
+		print(directory)
+		print(imgName)
+		print(imgContoursName)
+		
+		print(pMeasurements[0])
+		print(pMeasurements[1])
+		
+		
+		#sys.exit(0)
 	else :
 		print("No Image given\n")
-		sys.exit(0)
+		#sys.exit(0)
 
 #cv2.waitKey(0)
 

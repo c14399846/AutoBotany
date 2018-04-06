@@ -1,3 +1,5 @@
+"use strict";
+
 //https://www.w3schools.com/nodejs/nodejs_uploadfiles.asp
 var http = require('http');
 var formidable = require('formidable');
@@ -6,7 +8,7 @@ var ps = require('python-shell');
 
 
 //var scriptLoc = './../cs.py';
-var scriptLoc = './../imageProcess.py';
+var scriptLoc = './imageProcess.py';
 //var pyshell = new ps(scriptLoc);
 let imageExists = false;
 var fpath = '';
@@ -22,6 +24,21 @@ var gcs = gcloud.storage({
 
 // Reference an existing bucket.
 var bucket = gcs.bucket('fypautobotanyoutput');                
+
+
+//const massive = require('massive');
+const express = require('express');
+const app = express();
+const pg = require('pg');
+const conString = "postgresql://postgres:imageskydatabase@35.205.117.19:5432/postgres";
+
+const connectionInfo = {
+	host : "35.205.117.19",
+	port : 5432,
+	database : "postgres",
+	user: "postgres",
+	password: "imageskydatabase"
+};
 
 
 function nJSSucksAss(callback,path){
@@ -51,7 +68,7 @@ function pyTest(){
 			console.log('Finished py script\n');
 			imageExists = false;
 			console.log(results);
-			var localReadStream = fs.createReadStream('/home/image/images/pContours.png');
+			var localReadStream = fs.createReadStream('./images/pContours.png');
 			var bucketImg = 'pContours' + '_' + imgFile;
 			var remoteWriteStream = bucket.file(bucketImg).createWriteStream();
 			localReadStream.pipe(remoteWriteStream)
@@ -59,6 +76,61 @@ function pyTest(){
 			  .on('finish', function() {
 				console.log('Uploaded to bucket');
 			    // The file upload is complete.
+
+			    const results = [];
+
+			    pg.connect(conString, (err, client, done) => {
+			    	if(err){
+			    		done();
+			    		console.log(err);
+			    	}
+
+					let username = "plantguy1";
+			    	let date = new Date();
+
+			    	//let SQL = "INSERT INTO test2 (username, date) VALUES ($1, $2)", [username, date];
+			    	
+
+
+			    	client.query("INSERT INTO test2 (username, date) VALUES ($1, $2)",
+			    	[username, date]);
+
+			    	const query = client.query("select * from test2");
+
+			    	query.on('row', (row) => {
+			    		results.push(row);
+			    	});
+
+			    	query.on('end', () => {
+			    		done();
+			    		console.log(JSON.stringify(results));
+			    	});
+
+			    });
+
+			    /*massive(connectionInfo).then(instance => {
+			    	console.log("\ndatabase thing\n");
+			    	app.set("db", instance);
+
+			    	// NEED TO ADD RETURN CRAP HERE
+			    	let plantID = 1;
+			    	let width = 1;
+			    	let height = 1;
+			    	let filename = "1";
+			    	let day = "1";
+			    	//let date = "1";
+			    	let whateverElse = "1";
+
+			    	let username = "plantguy1";
+
+			    	let date = new Date();
+
+			    	let SQL = "INSERT INTO public.test2 (username, date) VALUES (${testUsername}, ${$testDate})";
+			    	app.get("db")
+			    	  .query(SQL, {testUsername:username}, {testDate:date})
+			    	  .catch(error => console.log("Failed to upload data to Database"));
+			    });*/
+
 			  });
 		});
 
@@ -76,12 +148,39 @@ http.createServer(function (req, res) {
 
 
     form.parse(req, function (err, fields, files) {
-		//console.log(files.fileupload);
-		//console.log(files);
+	   	
+	   	console.log(fields);
+		console.log(Object.keys(fields).length);
+
+
+	   	if(Object.keys(fields).length !== 0){
+	   		console.log("have file fields\n");
+	   		var ifile = gcs.bucket(fields.bucket).file('day19.png'); 
+	   		
+	   		var local_ifile = './images/' + 'day19.png';
+
+	   		ifile.createReadStream()
+	   			.on('error', function(err) {})
+	   			.on('response', function(response) {})
+	   			.on('end', function(){})
+	   			.on('finish', function(){})
+	   			.pipe(fs.createWriteStream(local_ifile));
+
+	   		//console.log(local_ifile);
+	   	} else {
+
+	   	//console.log("\n\n\n\n");
+		//console.log(req.body);
+
+		//console.log(req.url);
+		//console.log(req);
+		//console.log("\n\n\n\n");
+		console.log(files);
 
 		var oldPath = files.filetoupload.path;
 		//var newpath = upload_path + files.filetoupload.name;
-		var newPath = '/home/image/images/';
+		//var newPath = '/home/image/images/';
+		var newPath = './images/';
 		var filePath = newPath + files.filetoupload.name;
 
 
@@ -103,7 +202,7 @@ http.createServer(function (req, res) {
 			localReadStream.pipe(remoteWriteStream)
 			  .on('error', function(err) {})
 			  .on('finish', function() {
-				// The file upload is complete.
+			    // The file upload is complete.
 			  });
 			*/
 
@@ -112,7 +211,7 @@ http.createServer(function (req, res) {
 
 		});
 
-
+		}
 
 		/*
 		tmpfile = files.filetoupload.path;
@@ -136,7 +235,7 @@ http.createServer(function (req, res) {
 
 
 		//res.write('File uploaded!');
-		//res.end();
+	  	//res.end();
 
 		/*
 		var oldPath = files.filetoupload.path;
@@ -203,7 +302,7 @@ http.createServer(function (req, res) {
 		//pyTest();
 
 		res.write('File uploaded!');
-			res.end();
+	        res.end();
 		*/
     });
 	

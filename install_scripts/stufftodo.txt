@@ -1,0 +1,34 @@
+sudo apt-get install build-essential libssl-dev
+
+
+curl -sL https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh -o install_nvm.sh
+
+bash install_nvm.sh 
+
+source ~/.profile
+nano ~/.profile
+
+nvm install 4.9.1
+nvm use 4.9.1
+
+
+// Using a dperecated version of 'pg' to get connect working
+// Better use version 7+, and then do soemithng like:
+/*
+	//https://stackoverflow.com/questions/45174120/pg-connect-not-a-function
+
+	const pool = pg.new Pool();
+
+	// connection using created pool
+	pool.connect(function(err, client, done) {
+	  client.query(/* etc, etc */)
+	  done()
+	})
+
+	// pool shutdown
+	pool.end()
+*/
+
+
+npm install pg@6
+
