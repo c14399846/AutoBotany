@@ -4,7 +4,11 @@ import pyzbar.pyzbar as pyzbar
 import sys
 import numpy as np
 import cv2
+#from matplotlib import pyplot as plt
 from matplotlib import image as image
+#import easygui
+#import cv2.aruco as aruco
+#from DrawOver import DrawOver
 
 
 import os
@@ -636,10 +640,12 @@ def process(plantOrig):
 	#cv2.waitKey(0)
 	#cv2.destroyAllWindows()
 	
-	finalContour = getContoursWrap(contAnd, doubleHSVEdge)
+
+	# 06 April 2018 15:59pm
+	# I don't remember the point of this, probably when I was wokring on the colourspace stuff....
+	# 'finalcontour' may be useful, but I doubt it at this stage
+	#finalContour = getContoursWrap(contAnd, doubleHSVEdge)
 	#cv2.imshow("finalContour", finalContour)
-	
-	
 	
 	contheight, contwidth = contAnd.shape[:2]
 	#print("contheight:" + str(contheight) + "\n")
@@ -656,8 +662,8 @@ def process(plantOrig):
 	
 	decodedObjects = decode(plantOrig.copy())
 	
-	plantMeasurements = []
-	
+	plantMeasurements = [];
+
 	if decodedObjects is not None and len(decodedObjects) > 0:
 	
 		#disp = display(plantOrig.copy(), decodedObjects)
@@ -679,9 +685,8 @@ def process(plantOrig):
 		cmWidth = qrX / cm
 		cmHeight = qrY / cm
 		
-		# Returns values for plant data
-		plantMeasurements = [cmWidth, cmHeight]
-		
+		plantMeasurements = [cmWidth, cmHeight];
+
 		#print("Plant Width: " + str(contwidth / cmWidth) + "cm \n")
 		#print("Plant Height: " + str(contheight / cmHeight) + "cm \n")
 	
@@ -699,7 +704,7 @@ def process(plantOrig):
 
 
 
-def main(argv):
+def main(filepath, filename):
 	
 	'''
 	# Set bool to append / not append images to list
@@ -735,18 +740,18 @@ def main(argv):
 	
 	plantImg = None
 
-	while not os.path.exists(argv):
+	while not os.path.exists(filepath):
 		time.sleep(1)
 
-	if os.path.isfile(argv):
-		#plantImg = cv2.imread(argv)
-		plantImg = readInPlant(argv)
+	if os.path.isfile(filepath):
+		plantImg = cv2.imread(filepath)
 	else:
 		raise ValueError("Not a file!")
 	
+	#plantImg = readInPlant(argv)
+	#print(fielpath)
 
 	if plantImg is not None:
-		
 		height, width = plantImg.shape[:2]
 		plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
 
@@ -759,15 +764,20 @@ def main(argv):
 		#cv2.imshow("processed", processed)
 		#cv2.imshow('pContours', pContours)
 
+
 		#cv2.waitKey(0)
 		#cv2.destroyAllWindows()
+		
+		#cv2.imwrite('./images/final.png', processed)
 		
 		#directory = '/home/image/images/'
 		directory = './images/'
 		
+		origName = filename
 		#origPlant = 'orig.png'
-		imgName = 'processed.png'
-		imgContoursName = 'pContours.png'
+
+		imgName = "processed_" + origName
+		imgContoursName = "pContours_" + origName
 		
 		#origFile = directory + origPlant
 		outputFile = directory + imgName
@@ -777,19 +787,17 @@ def main(argv):
 		cv2.imwrite(outputFile, processed)
 		cv2.imwrite(outputContoursFile, pContours)
 		
-		# Returns values to the Node JS server with use of 'print()'
 		print("Image saved")
 		print(directory)
 		print(imgName)
 		print(imgContoursName)
-		
+
 		print(pMeasurements[0])
 		print(pMeasurements[1])
-		
-		
+
 		#sys.exit(0)
 	else :
-		print("No Image given\n")
+		print("No Image given")
 		#sys.exit(0)
 
 #cv2.waitKey(0)
@@ -803,4 +811,4 @@ def main(argv):
 # *(Need to add camera operations, maybe)
 if __name__ == '__main__':
 
-	main(sys.argv[1])
+	main(sys.argv[1], sys.argv[2])
