@@ -110,18 +110,26 @@ function pyTest(){
 
 			//console.log(results);
 
-			console.log("Width:" + results[4]);
-			console.log("Height:" + results[5]);
+			var fileDir = results[1];
+			var plantProcessedFilename = results[2];
+			var plantContoursFilename = results[3];
+			var plantID = results[4];
+			var width = results[5];
+			var height = results[6];
+			
+			console.log("plantID:" + plantID
+			console.log("Width:" + width);
+			console.log("Height:" + height);
 
 			// Hardcoded for testing
 			//var localReadStream = fs.createReadStream('./images/pContours.png');
 
-			var contFileLoc = results[1] + results[3];
+			var contFileLoc = fileDir + plantContoursFilename;
 			//console.log(contFileLoc);
 
 			//var bucketImg2 = 'pContours' + '_' + imgFile;
 			//var bucketImg = '\'' + results[3] + '\'';
-			var bucketImg = results[3];
+			var bucketImg = plantContoursFilename;
 			//console.log(bucketImg);
 			//console.log(bucketImg2);
 
@@ -153,30 +161,47 @@ function pyTest(){
 						  .on('finish', function() {
 						  	console.log("LMAO");
 
-						  	/*pg.connect(conString, (err, client, done) => {
+						  	pg.connect(conString, (err, client, done) => {
 			    	
 						    	if(err){
 						    		done();
 						    		console.log(err);
 						    	}
 								
-								let username = "plantguy1";
-						    	let date = new Date();
+								
+								//let username = "plantguy1";
+						    	let day = -1;
+								let date = new Date();
 
+								
+								let plantEvent = "none";
+								let plantType = "pea";
+								let growthCycle = "";
+								let imgID = -1;
+								
+								let iBucket = inputBucket;
+								let oBucket = outputBucket;
+								
+								let inputImgDir = "/";
+								let outputImgDir = "/";
+								
+								let inputImg = imgFile;
+								let outputImg = bucketImg;
+								
 
 						    	client.query(
 						    		"INSERT INTO plants (plantID, plantType, growthCycle,\
-						    		imgId, inputImg, inputImgDir, outputImg, outputImgDir, \
-						    		day, date, event, \
+						    		imgId, inputBucket, inputImg, inputImgDir, outputBucket, outputImg, outputImgDir, \
+						    		day, date, plantEvent, \
 						    		width, height) \
-						    		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+						    		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
 						    	[plantID, plantType, growthCycle, 
-						    	imgId, inputImg, inputImgDir, outputImg, outputImgDir, 
-						    	day, date, event,
+						    	imgId, inputBucket, inputImg, inputImgDir, outputBucket, outputImg, outputImgDir, 
+						    	day, date, plantEvent,
 						    	width, height]);
 
 						    }); // END POSTGRES CONNECT
-						    */
+						    
 
 
 						  });
