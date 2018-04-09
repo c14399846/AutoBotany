@@ -340,8 +340,24 @@ def qrcodeGetPlantID(decodedObjects):
 	
 	for obj in decodedObjects:
 		ID = obj.data
-	
-	return ID
+
+	# You need to remove the bytearray 
+
+	finalID = ID.decode("utf-8")
+
+	#strLen = len(ID)
+
+	#posID = ID[2:strLen-1]
+
+	'''
+	cutID = bytearray(ID)
+	del cutID[strLen-1]
+	del cutID[0]
+	del cutID[0]
+	cutID = str(cutID)
+	'''
+
+	return finalID
 
 # THIS NEEDS SOME WORK
 # Gets Contours using edges derived from a mask image
@@ -497,7 +513,7 @@ def process(plantOrig):
 		processedImages[count].append("contourRes")
 		count += 1
 	'''
-	cv2.imshow("contourRes", contourRes)
+	#cv2.imshow("contourRes", contourRes)
 	#cv2.waitKey(0)
 	
 	
@@ -572,7 +588,7 @@ def process(plantOrig):
 	#cv2.destroyAllWindows()
 	
 	contAnd = cv2.bitwise_and(cont, cont, mask = blkmask)
-	cv2.imshow("contAnd", contAnd)
+	#cv2.imshow("contAnd", contAnd)
 	cannyContAnd = applyCanny(contAnd, 30, 200)
 	#cv2.imshow("cannyContAnd", cannyContAnd)
 	
@@ -603,7 +619,7 @@ def process(plantOrig):
 	# I don't remember the point of this, probably when I was wokring on the colourspace stuff....
 	# 'finalcontour' may be useful, but I doubt it at this stage
 	finalContour = getContoursWrap(contAnd, doubleHSVEdge)
-	cv2.imshow("finalContour", finalContour)
+	#cv2.imshow("finalContour", finalContour)
 	
 	contheight, contwidth = contAnd.shape[:2]
 	#print("contheight:" + str(contheight) + "\n")
@@ -702,7 +718,9 @@ def main(filepath, filename):
 	if plantImg is not None:
 	
 		height, width = plantImg.shape[:2]
-		plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
+
+		# This is a decent size when I was using previous images at varying sizes
+		#plantImg = cv2.resize(plantImg,(1854, 966), interpolation = cv2.INTER_CUBIC)
 		#cv2.imshow("plantImg", plantImg)
 
 		

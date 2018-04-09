@@ -23,8 +23,10 @@ var gcs = gcloud.storage({
 
 
 // Reference an existing bucket.
-var inputBucket = gcs.bucket('fypautobotany');
-var outputBucket = gcs.bucket('fypautobotanyoutput');                
+var inBucketName = 'fypautobotany';
+var outBucketName = 'fypautobotanyoutput'
+var inputBucket = gcs.bucket(inBucketName);
+var outputBucket = gcs.bucket(outBucketName);                
 
 
 //const massive = require('massive');
@@ -117,9 +119,19 @@ function pyTest(){
 			var width = results[5];
 			var height = results[6];
 			
-			console.log("plantID:" + plantID
+			/*
+			console.log("plantID:" + plantID);
 			console.log("Width:" + width);
 			console.log("Height:" + height);
+			*/
+
+			console.log(results);
+
+			if (!width && !height) {
+				console.log("Null or Empty measurements");
+				width = -1;
+				height = -1;
+			}
 
 			// Hardcoded for testing
 			//var localReadStream = fs.createReadStream('./images/pContours.png');
@@ -138,7 +150,80 @@ function pyTest(){
 			//var localReadStream = fs.createReadStream(contFileLoc);
 			//var remoteWriteStream = outputBucket.file(bucketImg).createWriteStream();
 
-			var readPlant = readPlantStream(contFileLoc);
+
+			outputBucket
+				.upload(contFileLoc)
+				.then( () => {
+					console.log(`Uploaded file ${contFileLoc} to ${outBucketName}`);
+					pg.connect(conString, (err, client, done) => {
+	
+				    	if(err){
+				    		console.log(err);
+				    		done();
+				    	}
+
+				    	console.log("Connected to DB");
+						
+						
+						//let username = "plantguy1";
+				    	let day = -1;
+						let date = new Date();
+
+						
+						let plantEvent = "none";
+						let plantType = "pea";
+						let growthCycle = "";
+						let imgID = -1;
+						
+						let iBucket = inBucketName;
+						let oBucket = outBucketName;
+						
+						let inputImgDir = "/";
+						let outputImgDir = "/";
+						
+						let inputImg = imgFile;
+						let outputImg = bucketImg;
+
+						console.log(width);
+						console.log(height);
+						/*console.log(inputImg.length);
+						console.log(bucketImg.length);
+						console.log(plantType.length);
+						console.log(inputBucket.length);
+						console.log(inputBucket.length);
+						*/
+
+						try {
+							client.query(
+					    		"INSERT INTO plants (plantID, plantType, growthCycle,\
+					    		imgID, inputBucket, inputImg, inputImgDir, outputBucket, outputImg, outputImgDir, \
+					    		day, date, plantEvent, \
+					    		width, height) \
+					    		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+					    	[plantID, plantType, growthCycle, 
+					    	imgID, iBucket, inputImg, inputImgDir, oBucket, outputImg, outputImgDir, 
+					    	day, date, plantEvent,
+					    	width, height]);
+
+					    	console.log("INSERT");
+
+						} catch (error){
+							console.log(error);
+						}
+
+						console.log("DB Inserted data");
+				    	
+
+				    }); // END POSTGRES CONNECT
+				})
+				.catch(err => {
+					console.log("ERROR: ", err);
+				}); 
+
+			// Read in file and write it to the bucket,
+			// Hopefully, if it works at all
+
+			/*var readPlant = readPlantStream(contFileLoc);
 
 			readPlant.then( function(value){
 
@@ -147,64 +232,35 @@ function pyTest(){
 				//console.log("read");
 
 				var writePlant = writePlantStream(bucketImg);
+
 				writePlant.then( function(value){
+
 					remoteWriteStream = value;
 					//console.log(remoteWriteStream);
 					//console.log("write");
 
 					if(localReadStream != null && remoteWriteStream != null){
 
-						console.log("ayy ");
+						console.log("Pre Pipe ");
+
+
 
 						localReadStream.pipe(remoteWriteStream)
-						  .on('error', function(err) {})
+						  .on('error', function(err) {
+						  	console.log(err);
+						  })
 						  .on('finish', function() {
-						  	console.log("LMAO");
 
-						  	pg.connect(conString, (err, client, done) => {
-			    	
-						    	if(err){
-						    		done();
-						    		console.log(err);
-						    	}
-								
-								
-								//let username = "plantguy1";
-						    	let day = -1;
-								let date = new Date();
+						  	console.log("Post Pipe");
 
-								
-								let plantEvent = "none";
-								let plantType = "pea";
-								let growthCycle = "";
-								let imgID = -1;
-								
-								let iBucket = inputBucket;
-								let oBucket = outputBucket;
-								
-								let inputImgDir = "/";
-								let outputImgDir = "/";
-								
-								let inputImg = imgFile;
-								let outputImg = bucketImg;
-								
+						  	console.log("File piped");
 
-						    	client.query(
-						    		"INSERT INTO plants (plantID, plantType, growthCycle,\
-						    		imgId, inputBucket, inputImg, inputImgDir, outputBucket, outputImg, outputImgDir, \
-						    		day, date, plantEvent, \
-						    		width, height) \
-						    		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
-						    	[plantID, plantType, growthCycle, 
-						    	imgId, inputBucket, inputImg, inputImgDir, outputBucket, outputImg, outputImgDir, 
-						    	day, date, plantEvent,
-						    	width, height]);
-
-						    }); // END POSTGRES CONNECT
-						    
+						  	// POSTGRES used to be here
 
 
-						  });
+					  	});
+
+						localReadStream.end();
 
 					}
 
@@ -213,9 +269,19 @@ function pyTest(){
 					});*/
 					
 					//console.log("pipe");
-				});
+				
+			// Part of the piping stuff
+			/*		});
 
 			});
+
+			*/
+
+
+
+
+
+
 
 			/*var writePlant = writePlantStream(bucketImg);
 			writePlant.then( function(value){
@@ -329,7 +395,10 @@ function readFile(oldPath, newPath){
 //var upload_path = "/home/image/node/";
 
 http.createServer(function (req, res) {
+
   if (req.url == '/fileupload') {
+
+  	console.log("Server accessed from Bucket or CURL");
 
     var form = new formidable.IncomingForm();
 
@@ -358,6 +427,7 @@ http.createServer(function (req, res) {
 	   			});
 	   	} else {
 
+			console.log("Server accessed from browser");
 			//console.log(files);
 
 			var oldPath = files.filetoupload.path;
