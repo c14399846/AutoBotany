@@ -213,6 +213,14 @@ function pyTest(){
 
 						console.log("DB Inserted data");
 				    	
+						try{
+							fs.unlink(fileDir + plantProcessedFilename);
+							fs.unlink(fileDir + plantContoursFilename);
+							fs.unlink(fileDir + imgFile);
+						}
+						catch(unlinkError){
+							console.log(unlinkError);
+						}
 
 				    }); // END POSTGRES CONNECT
 				})
