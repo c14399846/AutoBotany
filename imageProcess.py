@@ -27,6 +27,22 @@ import time
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 
+# Set bool to append / not append images to list
+adddetectedPlant = False
+addlab = False
+addlabBGR = False
+adddetectedFilteredPlant = False
+addorigImgLoc = True
+addfilteredImgLoc = True
+
+addedgeLoc = False
+addedgeFilteredLoc = False
+adddoubleEdge = False
+addcontourRes = True
+addcontAnd = True
+
+# Set bool to Show all images added to list
+showAll = False
 
 
 
@@ -51,6 +67,11 @@ def convertBGRGray(image):
 	
 	return grayImg
 
+def convertGray2BGR(image):
+
+	bgrImg = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
+	return bgrImg
 
 
 # Converts BGR to HSV
@@ -240,12 +261,13 @@ def getContours(plant, edge):
 	
 	
 	# Finds largest contours in the image, from sorted contours
-	for i in range(numberPlants):
+	if(contoursEdge):
+		for i in range(numberPlants):
 
-		x,y,w,h = cv2.boundingRect(contoursEdge[i])
+			x,y,w,h = cv2.boundingRect(contoursEdge[i])
 
-		# Cropping is here (If it works.....)
-		baseImg = baseImg[y:y+h, x:x+w]
+			# Cropping is here (If it works.....)
+			baseImg = baseImg[y:y+h, x:x+w]
 
 		
 	return baseImg
@@ -361,14 +383,14 @@ def getContoursWrap(plant, edge):
 	# Find largest contours by Area (Have to be closed contours)
 	contoursEdge = sorted(contoursEdge, key = cv2.contourArea, reverse = True)
 	
-	
-	for i in range(numberPlants):
-		
-		# Contours that wrap around the plant object
-		hull = cv2.convexHull(contoursEdge[i])
-		cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
-		img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
-		
+	if(contoursEdge):
+		for i in range(numberPlants):
+			
+			# Contours that wrap around the plant object
+			hull = cv2.convexHull(contoursEdge[i])
+			cv2.polylines(baseImg, pts=hull, isClosed=True, color=(0,255,255))
+			img = cv2.drawContours(baseImg, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
+			
 	return baseImg
 	
 	
@@ -477,11 +499,9 @@ def detectPlant(detPlant):
 	lower_green = (30,60,60) # Lower Plant Colourspace
 	upper_green = (80,255,255)	# Upper Plant Colourspace
 
-	cla = clahe.apply(detPlant)
-	
-	hsv = convertBGRHSV(cla)
+	hsv = convertBGRHSV(detPlant)
 	hsvrange = getColourRange(hsv, lower_green, upper_green)
-	
+
 	return hsvrange
 	
 	
@@ -495,7 +515,24 @@ def process(plantOrig):
 	kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
 	kernelVerySharp = np.array( [[ -1, -1, -1], [ -1, 9, -1], [ -1, -1, -1]], dtype = float)
 
+
 	
+
+	# Using CLAHE
+	grayCLA = convertBGRGray(plantOrig.copy())
+
+	lab = cv2.cvtColor(plantOrig.copy(), cv2.COLOR_BGR2LAB)
+	planes = cv2.split(lab)
+	planes[0] = applyCLAHE(planes[0])
+	lab = cv2.merge(planes)
+	cla = convertLABBGR(lab)
+
+	#cv2.imshow('orig', plantOrig)
+	#cv2.imshow('cla', cla)
+	#cv2.waitKey()
+	
+	plantOrig = cla
+
 	# Converts image to HSV colourspace
 	# Gets colours in a certain range
 	
@@ -523,8 +560,7 @@ def process(plantOrig):
 	# Applies filters to blend colours
 	# *Might* make plant extraction easier (for edges / contours)
 	bilateral = applyBilateralFilter(plantOrig, 11, 17, 17)
-	
-	
+
 	# Convert Filtered image to HSV, get colour range for mask
 	detectedFilteredPlant = detectPlant(bilateral)
 	
@@ -608,7 +644,12 @@ def process(plantOrig):
 	# but had to manually remove the Background and etc.
 	# Not enough training data to detect a plant over time
 	contAnd = removeBackground(contourRes.copy())
-	
+	if(addcontAnd):
+		processedImages.append([])
+		processedImages[count].append(contAnd)
+		processedImages[count].append("contAnd")
+		count += 1
+	#cv2.imshow("contAnd", contAnd)
 
 	# QR Code stuff
 	# Used this library to extract QR Code
@@ -621,6 +662,9 @@ def process(plantOrig):
 	
 	plantID = -1;
 	
+
+	contourHeight, contourWidth = contAnd.shape[:2]
+
 	
 	if decodedObjects is not None and len(decodedObjects) > 0:
 	
@@ -634,12 +678,16 @@ def process(plantOrig):
 		
 		plantID = qrcodeGetPlantID(decodedObjects)
 		
-		cm = 5
+		# QR Code is 2cm by 2cm
+		qr_size = 2
 		
 		# how Many pixels per centimetre
-		cmWidth = qrX / cm
-		cmHeight = qrY / cm
-		
+		qrWidth = qrX / qr_size
+		qrHeight = qrY / qr_size
+
+		cmWidth = contourWidth / qrWidth
+		cmHeight = contourHeight /qrHeight
+
 		plantMeasurements = [cmWidth, cmHeight];
 
 		#print("Plant Width: " + str(contwidth / cmWidth) + "cm \n")
@@ -662,25 +710,7 @@ def process(plantOrig):
 
 
 
-def main(filepath, filename):
-	
-	
-	# Set bool to append / not append images to list
-	adddetectedPlant = False
-	addlab = False
-	addlabBGR = False
-	adddetectedFilteredPlant = False
-	addorigImgLoc = False
-	addfilteredImgLoc = False
-
-	addedgeLoc = False
-	addedgeFilteredLoc = False
-	adddoubleEdge = False
-	addcontourRes = False
-
-	# Set bool to Show all images added to list
-	showAll = False
-	
+def main(filepath, filename):	
 
 	plantImg = None
 
