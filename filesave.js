@@ -6,10 +6,7 @@ var formidable = require('formidable');
 var fs = require('fs');
 var ps = require('python-shell');
 
-
-//var scriptLoc = './../cs.py';
 var scriptLoc = './imageProcess.py';
-//var pyshell = new ps(scriptLoc);
 let imageExists = false;
 var fpath = '';
 var imgFile = null;
@@ -98,19 +95,16 @@ function pyTest(){
 			args: [fpath, imgFile]	
 		};
 
-		console.log('fpath before python: ' + fpath);
-		console.log(options);
+		//console.log('fpath before python: ' + fpath);
+		//console.log(options);
 
-		//var pyshell = new ps(scriptLoc);
-		//console.log(imageExists);
 		ps.run(scriptLoc, options, function(err, results){
 
 			if(err) throw err;
-			console.log('Finished py script');
+			console.log('Finished running py script');
 
 			imageExists = false;
 
-			//console.log(results);
 
 			var fileDir = results[1];
 			var plantProcessedFilename = results[2];
@@ -118,43 +112,22 @@ function pyTest(){
 			var plantID = results[4];
 			var width = results[5];
 			var height = results[6];
+
 			
-			/*
-			console.log("plantID:" + plantID);
-			console.log("Width:" + width);
-			console.log("Height:" + height);
-			*/
-
-			console.log(results);
-
 			if (!width && !height) {
 				console.log("Null or Empty measurements");
 				width = -1;
 				height = -1;
 			}
 
-			// Hardcoded for testing
-			//var localReadStream = fs.createReadStream('./images/pContours.png');
-
 			var contFileLoc = fileDir + plantContoursFilename;
-			//console.log(contFileLoc);
-
-			//var bucketImg2 = 'pContours' + '_' + imgFile;
-			//var bucketImg = '\'' + results[3] + '\'';
 			var bucketImg = plantContoursFilename;
-			//console.log(bucketImg);
-			//console.log(bucketImg2);
-
-			var localReadStream = null;
-			var remoteWriteStream = null;
-			//var localReadStream = fs.createReadStream(contFileLoc);
-			//var remoteWriteStream = outputBucket.file(bucketImg).createWriteStream();
 
 
 			outputBucket
 				.upload(contFileLoc)
 				.then( () => {
-					console.log(`Uploaded file ${contFileLoc} to ${outBucketName}`);
+					console.log(`Uploaded output file ${contFileLoc} to ${outBucketName}`);
 					pg.connect(conString, (err, client, done) => {
 	
 				    	if(err){
@@ -184,15 +157,6 @@ function pyTest(){
 						let inputImg = imgFile;
 						let outputImg = bucketImg;
 
-						console.log(width);
-						console.log(height);
-						/*console.log(inputImg.length);
-						console.log(bucketImg.length);
-						console.log(plantType.length);
-						console.log(inputBucket.length);
-						console.log(inputBucket.length);
-						*/
-
 						try {
 							client.query(
 					    		"INSERT INTO plants (plantID, plantType, growthCycle,\
@@ -212,14 +176,13 @@ function pyTest(){
 						}
 
 						console.log("DB Inserted data");
-				    	
+
 						try{
-							fs.unlink(fileDir + plantProcessedFilename);
-							fs.unlink(fileDir + plantContoursFilename);
-							fs.unlink(fileDir + imgFile);
-						}
-						catch(unlinkError){
-							console.log(unlinkError);
+				    		fs.unlink(fileDir + plantProcessedFilename);
+				    		fs.unlink(fileDir + plantContoursFilename);
+				    		fs.unlink(fileDir + imgFile);
+						} catch(unlinkErr) {
+							console.log(unlinkErr);
 						}
 
 				    }); // END POSTGRES CONNECT
@@ -227,150 +190,6 @@ function pyTest(){
 				.catch(err => {
 					console.log("ERROR: ", err);
 				}); 
-
-			// Read in file and write it to the bucket,
-			// Hopefully, if it works at all
-
-			/*var readPlant = readPlantStream(contFileLoc);
-
-			readPlant.then( function(value){
-
-				localReadStream = value;
-				//console.log(localReadStream);
-				//console.log("read");
-
-				var writePlant = writePlantStream(bucketImg);
-
-				writePlant.then( function(value){
-
-					remoteWriteStream = value;
-					//console.log(remoteWriteStream);
-					//console.log("write");
-
-					if(localReadStream != null && remoteWriteStream != null){
-
-						console.log("Pre Pipe ");
-
-
-
-						localReadStream.pipe(remoteWriteStream)
-						  .on('error', function(err) {
-						  	console.log(err);
-						  })
-						  .on('finish', function() {
-
-						  	console.log("Post Pipe");
-
-						  	console.log("File piped");
-
-						  	// POSTGRES used to be here
-
-
-					  	});
-
-						localReadStream.end();
-
-					}
-
-					/*uploadPlantStream(localReadStream, remoteWriteStream).then( function(value){
-						console.log(value);
-					});*/
-					
-					//console.log("pipe");
-				
-			// Part of the piping stuff
-			/*		});
-
-			});
-
-			*/
-
-
-
-
-
-
-
-			/*var writePlant = writePlantStream(bucketImg);
-			writePlant.then( function(value){
-				remoteWriteStream = value;
-				//console.log(value);
-			});
-
-			uploadPlantStream(localReadStream, remoteWriteStream);
-			*/
-
-			/*
-			localReadStream.pipe(remoteWriteStream)
-			  .on('error', function(err) {})
-			  .on('finish', function() {
-			  	
-				console.log('Uploaded to bucket');
-			    // The file upload is complete.
-
-			    const results = [];
-
-			    pg.connect(conString, (err, client, done) => {
-			    	
-			    	if(err){
-			    		done();
-			    		console.log(err);
-			    	}
-			*/
-					//let username = "plantguy1";
-			    	//let date = new Date();
-
-			    	
-		    		/*id SERIAL,
-					plantID integer,
-					plantType varchar(50),
-					imgId integer,
-					inputImg varchar(50),
-					inputImgDir varchar(50),
-					outputImg varchar(50),
-					outputImgDir varchar(50),
-					day integer,
-					date date,
-					growthCycle varchar(20),
-					event varchar(20),
-					width numeric,
-					height numeric*/
-
-			    	/*client.query(
-			    		"INSERT INTO plants (plantID, plantType, growthCycle,\
-			    		imgId, inputImg, inputImgDir, outputImg, outputImgDir, \
-			    		day, date, event, \
-			    		width, height) \
-			    		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
-			    	[plantID, plantType, growthCycle, 
-			    	imgId, inputImg, inputImgDir, outputImg, outputImgDir, 
-			    	day, date, event,
-			    	width, height]);
-					*/
-
-
-					// TEST VERSION, IT WORKED
-
-					//let SQL = "INSERT INTO test2 (username, date) VALUES ($1, $2)", [username, date];
-			    	
-			    	/*
-					client.query("INSERT INTO test2 (username, date) VALUES ($1, $2)", [username, date]);
-			    	*/
-
-			    	/*const query = client.query("select * from test2");
-
-			    	query.on('row', (row) => {
-			    		results.push(row);
-			    	});
-
-			    	query.on('end', () => {
-			    		done();
-			    		console.log(JSON.stringify(results));
-			    	});*/
-
-			    //});
-
-			  //});
 		});
 
 	}
@@ -414,16 +233,17 @@ http.createServer(function (req, res) {
 
 
     form.parse(req, function (err, fields, files) {
-	   	
-	   	//console.log(fields);
-		//console.log(Object.keys(fields).length);
 
-
+    	// The bucket portion of code
 	   	if(Object.keys(fields).length !== 0){
-	   		console.log("have file fields\n");
+
+	   		console.log("Server accessed from bucket upload");
+
 	   		var ifile = gcs.bucket(fields.bucket).file(fields.filename); 
 	   		
-	   		var local_ifile = './images/' + fields.filename;
+	   		var local_path = './images/';
+
+	   		var local_ifile = local_path + fields.filename;
 
 	   		ifile.createReadStream()
 	   			.pipe(fs.createWriteStream(local_ifile))
@@ -432,8 +252,20 @@ http.createServer(function (req, res) {
 	   			.on('end', function(){})
 	   			.on('finish', function(){
 	   				console.log("have ifile\n");
+	   				console.log(local_ifile);
+
+	   				fpath = local_ifile;
+	   				imgFile = fields.filename;
+
+	   				pyTest();
+
+					res.write('File uploaded!');
+					res.end();
 	   			});
-	   	} else {
+	   	}
+
+	   	// The GUI portion of the code (from browser)
+	   	else {
 
 			console.log("Server accessed from browser");
 			//console.log(files);
@@ -447,32 +279,31 @@ http.createServer(function (req, res) {
 
 				if (err) throw err;
 
-				imageExists = true;
+				inputBucket
+					.upload(filePath)
+					.then( () => {
+						console.log(`Uploaded input file ${filePath} to ${inBucketName}`);
+					});
+
+				// Issue found, shouldn't upload to buck and then run the pytohn code, 
+				// as the inserted image is re-run because of the file uplaod to the bucket
+				/*imageExists = true;
 				console.log("Exists in rename: " + imageExists);
 
 				//fpath = oldPath;
 				fpath = filePath;
 				imgFile = files.filetoupload.name;
 				pyTest();
-
+				*/
 				res.write('File uploaded!');
 				res.end();
-
+	 			
 			});
 
 		}
     });
-	
-    //readpath = tmpfile;
-
-    //console.log('readpath: ' + readpath + '\n');
-
 
   imageExists = true;
-  //pyTest();
-
-  //res.write('File uploaded!');
-  //res.end();
 
   } else {
     res.writeHead(200, {'Content-Type': 'text/html'});
