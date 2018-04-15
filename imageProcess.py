@@ -33,7 +33,7 @@ addorigImgLoc = False
 addfilteredImgLoc = False
 addedgeLoc = False
 addedgeFilteredLoc = False
-adddoubleEdge = False
+addmergedImageEdges = False
 addcontourRes = False
 addcontAnd = False
 
@@ -110,7 +110,7 @@ def getColourRange(image, lower, upper):
 
 
 
-# Seperates colours in image that match the mask
+# Extracts colour pixels in image that match the mask (range)
 def getPlantLocation(image, range):
 
 	plantLocation = cv2.bitwise_and(image.copy(), image, mask = range)
@@ -489,7 +489,7 @@ def removeBackground(contourRes):
 
 	
 	
-	
+# Detects plant by looking for HSV colour values in a certain range	
 def detectPlant(detPlant):
 
 	# HSV colour range to find 'Green' plants
@@ -516,7 +516,7 @@ def process(plantOrig):
 
 	
 
-	# Using CLAHE
+	# Using CLAHE contrasting
 	grayCLA = convertBGRGray(plantOrig.copy())
 
 	lab = cv2.cvtColor(plantOrig.copy(), cv2.COLOR_BGR2LAB)
@@ -530,10 +530,11 @@ def process(plantOrig):
 	#cv2.waitKey()
 	
 	plantOrig = cla
-
+	
+	
+	
 	# Converts image to HSV colourspace
 	# Gets colours in a certain range
-	
 	detectedPlant = detectPlant(plantOrig)
 	
 	if(adddetectedPlant):
@@ -555,8 +556,10 @@ def process(plantOrig):
 	
 	
 	
-	# Applies filters to blend colours
+	
+	# Applies filters to help to blend colours
 	# *Might* make plant extraction easier (for edges / contours)
+	# A bit of a double-edged sword, as some detail is lost
 	bilateral = applyBilateralFilter(plantOrig, 11, 17, 17)
 
 	# Convert Filtered image to HSV, get colour range for mask
@@ -584,6 +587,8 @@ def process(plantOrig):
 	#mergedPlantAreas = mergeImages(origImgLoc, filteredImgLoc, 0.5, 0.5)
 	
 	
+	
+	
 	# Gets Canny Edges of Plant Pixels
 	edgeLoc = applyCanny(origImgLoc, 30, 200)
 	if(addedgeLoc):
@@ -592,7 +597,6 @@ def process(plantOrig):
 		processedImages[count].append("edgeLoc")
 		count += 1
 	#cv2.imshow("edgeLoc", edgeLoc)
-	
 	
 	
 	# Gets Canny Edges of Filtered Plant Pixels
@@ -604,28 +608,27 @@ def process(plantOrig):
 		count += 1
 	#cv2.imshow("edgeFilteredLoc", edgeFilteredLoc2)
 	
-
 	
-	# Adds the 2 Canny Edges together, better Countour coverage achieved
-	# https://docs.opencv.org/3.2.0/d0/d86/tutorial_py_image_arithmetics.html
-	# Reference code
-	
-	edge1 = edgeLoc.copy()
-	edge2 = edgeFilteredLoc.copy()
-	shape = plantOrig.shape
+	# Adds the 2 Canny Edges together, better Countour coverage is achieved
+	edgeOriginal = edgeLoc.copy()
+	edgeFiltered = edgeFilteredLoc.copy()
+	imageShape = plantOrig.shape
 	
 	# Merge the two edge images together to create overlap
-	doubleEdge = mergeEdges(edge1, edge2, shape)
-	if(adddoubleEdge):
+	mergedImageEdges = mergeEdges(edgeOriginal, edgeFiltered, imageShape)
+	if(addmergedImageEdges):
 		processedImages.append([])
-		processedImages[count].append(doubleEdge)
-		processedImages[count].append("doubleEdge")
+		processedImages[count].append(mergedImageEdges)
+		processedImages[count].append("mergedImageEdges")
 		count += 1
-	#cv2.imshow("doubleEdge", doubleEdge)
+	#cv2.imshow("mergedImageEdges", mergedImageEdges)
 	
 	
-	# Finds Contours from Both Edges
-	contourImage = getContours(plantOrig, doubleEdge)
+	
+	
+	# Finds Contours (Enclosed pixel area) from Both Edges
+	# This is used to help find an ROI, which *should* be the plant
+	contourImage = getContours(plantOrig, mergedImageEdges)
 	if(addcontourRes):
 		processedImages.append([])
 		processedImages[count].append(contourImage)
