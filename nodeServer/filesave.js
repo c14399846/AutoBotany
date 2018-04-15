@@ -1,3 +1,12 @@
+/*
+	C14399846
+	Oleg Petcov
+
+
+
+*/
+
+
 "use strict";
 
 //https://www.w3schools.com/nodejs/nodejs_uploadfiles.asp
@@ -5,33 +14,37 @@ var http = require('http');
 var formidable = require('formidable');
 var fs = require('fs');
 var ps = require('python-shell');
+var gcloud = require('google-cloud');
 
-var scriptLoc = './imageProcess.py';
+
+// Image and Python file data
+var scriptLoc = '../pythonCode/imageProcess.py';
 let imageExists = false;
 var fpath = '';
 var imgFile = null;
 
-var gcloud = require('google-cloud');
 
+// Google Cloud Storage access
 var gcs = gcloud.storage({
   projectId: 'image-processing-189813',
   keyFilename: './gcs/keyfile.json'
 });
 
 
-// Reference an existing bucket.
+// Reference Image Buckets
 var inBucketName = 'fypautobotany';
 var outBucketName = 'fypautobotanyoutput'
 var inputBucket = gcs.bucket(inBucketName);
 var outputBucket = gcs.bucket(outBucketName);                
 
-
-//const massive = require('massive');
+// Express
 const express = require('express');
 const app = express();
+
+
+// Postges access details
 const pg = require('pg');
 const conString = "postgresql://postgres:imageskydatabase@35.205.117.19:5432/postgres";
-
 const connectionInfo = {
 	host : "35.205.117.19",
 	port : 5432,
@@ -41,7 +54,8 @@ const connectionInfo = {
 };
 
 
-
+// Streams for piping files
+/*
 function readPlantStream(pFile){
 	return new Promise( function(resolve, reject) {
 
@@ -83,8 +97,11 @@ function uploadPlantStream(localReadStream, remoteWriteStream){
 
 	});
 }
+*/
 
-function pyTest(){
+
+// Executes Python and Database code
+function processImage(){
 
 	console.log("\nExists: " + imageExists + "\n");
 
@@ -101,33 +118,40 @@ function pyTest(){
 		ps.run(scriptLoc, options, function(err, results){
 
 			if(err) throw err;
+			
 			console.log('Finished running py script');
 
 			imageExists = false;
 
-
 			var fileDir = results[1];
 			var plantProcessedFilename = results[2];
 			var plantContoursFilename = results[3];
+			
 			var plantID = results[4];
 			var width = results[5];
 			var height = results[6];
 
-			
+			// If there is not width or height, means there was no QR Code detected
 			if (!width && !height) {
 				console.log("Null or Empty measurements");
 				width = -1;
 				height = -1;
 			}
 
+			
 			var contFileLoc = fileDir + plantContoursFilename;
+			
 			var bucketImg = plantContoursFilename;
 
-
+			// Upload processed image to the Output Bucket
 			outputBucket
 				.upload(contFileLoc)
 				.then( () => {
+					
 					console.log(`Uploaded output file ${contFileLoc} to ${outBucketName}`);
+					
+					
+					// Begin Inserting data into the Postgres database
 					pg.connect(conString, (err, client, done) => {
 	
 				    	if(err){
@@ -137,12 +161,9 @@ function pyTest(){
 
 				    	console.log("Connected to DB");
 						
-						
-						//let username = "plantguy1";
 				    	let day = -1;
 						let date = new Date();
 
-						
 						let plantEvent = "none";
 						let plantType = "pea";
 						let growthCycle = "";
@@ -177,6 +198,8 @@ function pyTest(){
 
 						console.log("DB Inserted data");
 
+						// After finished Inserting,
+						// Try deleting the locally storaged images 
 						try{
 				    		fs.unlink(fileDir + plantProcessedFilename);
 				    		fs.unlink(fileDir + plantContoursFilename);
@@ -191,126 +214,102 @@ function pyTest(){
 					console.log("ERROR: ", err);
 				}); 
 		});
-
 	}
 }
 
 
-
-// NEED TO FIX AND USE LATER ON
-function readFile(oldPath, newPath){
-
-	fs.rename(oldPath, newPath, function (err) {
-
-		if (err) throw err;
-
-		imageExists = true;
-		//console.log("Exists in rename: " + imageExists);
-
-		//fpath = oldPath;
-		fpath = filePath;
-		imgFile = files.filetoupload.name;
-		pyTest();
-
-		res.write('File uploaded!');
-		res.end();
-
-	});
-
-}
-
-//var upload_path = "/home/image/node/";
-
+// HTTP Server
 http.createServer(function (req, res) {
 
   if (req.url == '/fileupload') {
-
-  	console.log("Server accessed from Bucket or CURL");
+  	
+	console.log("Server accessed from: ");
 
     var form = new formidable.IncomingForm();
 
     var tmpfile = '';
 
-
     form.parse(req, function (err, fields, files) {
 
-    	// The bucket portion of code
+    	// The bucket upload portion of code
+		// Cloud Function will send data about the Input image
 	   	if(Object.keys(fields).length !== 0){
 
-	   		console.log("Server accessed from bucket upload");
+	   		console.log("\t bucket upload");
 
+			// The File stored on the Input Bucket
 	   		var ifile = gcs.bucket(fields.bucket).file(fields.filename); 
 	   		
-	   		var local_path = './images/';
+	   		var local_path = '../images/';
 
-	   		var local_ifile = local_path + fields.filename;
+			
+	   		var local_imgfile = local_path + fields.filename;
 
 	   		ifile.createReadStream()
-	   			.pipe(fs.createWriteStream(local_ifile))
+	   			.pipe(fs.createWriteStream(local_imgfile))
 	   			.on('error', function(err) {})
 	   			.on('response', function(response) {})
 	   			.on('end', function(){})
 	   			.on('finish', function(){
-	   				console.log("have ifile\n");
-	   				console.log(local_ifile);
+					
+	   				console.log("Finished piping imgfile\n");
+	   				console.log(local_imgfile);
 
-	   				fpath = local_ifile;
+	   				fpath = local_imgfile;
+					
 	   				imgFile = fields.filename;
 
-	   				pyTest();
+					// Python Code
+	   				processImage();
 
 					res.write('File uploaded!');
 					res.end();
 	   			});
 	   	}
 
-	   	// The GUI portion of the code (from browser)
+	   	// The GUI upload portion of the code (from browser)
+		// Will send image to the Compute Server and Input Bucket
 	   	else {
 
-			console.log("Server accessed from browser");
-			//console.log(files);
+			console.log("\t browser");
 
 			var oldPath = files.filetoupload.path;
-			var newPath = './images/';
+			
+			var newPath = '../images/';
+			
 			var filePath = newPath + files.filetoupload.name;
-
 
 			fs.rename(oldPath, filePath, function (err) {
 
 				if (err) throw err;
 
+				// Upload file to Input Bucket
 				inputBucket
 					.upload(filePath)
 					.then( () => {
 						console.log(`Uploaded input file ${filePath} to ${inBucketName}`);
 					});
-
-				// Issue found, shouldn't upload to buck and then run the pytohn code, 
-				// as the inserted image is re-run because of the file uplaod to the bucket
-				/*imageExists = true;
-				console.log("Exists in rename: " + imageExists);
-
-				//fpath = oldPath;
-				fpath = filePath;
-				imgFile = files.filetoupload.name;
-				pyTest();
-				*/
+				
 				res.write('File uploaded!');
 				res.end();
 	 			
 			});
-
 		}
     });
 
   imageExists = true;
 
   } else {
+	  
+	// HTML Form for browser access
+	
     res.writeHead(200, {'Content-Type': 'text/html'});
+    res.write('<center>');
     res.write('<form action="fileupload" method="post" enctype="multipart/form-data">');
-    res.write('<input type="file" name="filetoupload"><br>');
+    res.write('<input type="file" name="filetoupload" accept="image/png, image/jpg. image/jpeg, image/bmp"><br>');
     res.write('<input type="submit">');
     res.write('</form>');
+	res.write('</center>');
     return res.end();
   }
 }).listen(3000); 
