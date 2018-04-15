@@ -1,12 +1,12 @@
 {
-  "type": "<TYPE_OF_ACCOUNT>",
-  "project_id": "<PROJECT_ID>",
-  "private_key_id": "<PRIVATE_KEY_ID>",
-  "private_key": "-----BEGIN PRIVATE KEY-----\n<PRIVATE KEY STUFF HERE>\n-----END PRIVATE KEY-----\n",
-  "client_email": "<IAM_USERNAME>@<PROJECT_ID>.iam.gserviceaccount.com",
-  "client_id": "<CLIENT_ID>",
+  "type": "service_account",
+  "project_id": "image-processing-189813",
+  "private_key_id": "77b2e3b28d1f0f65366aa300f245ece68bd8490d",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCTUj2uk5z4yOhe\nbD/Et1R0OF4E7lu5DXpZiMsliMQv92knQmWdlrUvrlAnwd7oETQDu/gL17L7Rvjt\nAR+D9y+ZemU9ETRd6WhmsXeoglO0QBo02wKZV9vP9YgnqZ0dTvpJrGgXMd4gY48i\ncSub4xaFJGFTlEl1pGx8Cpt55zKyfoltHOVpx/AVRiwVHHNtU03qzZCV63H6V+59\ndsyRslvXmZNy4/kpoFIUuItro036fdki+7wZ3AUGICHebP/i0xozLxyn1ugq7BIj\nrpj9O6rKFOC+2IWX1dmbVnVjlxWawmaoqO/WXM7l+Sxqy6Z1HBKcVWYwXqSWOu5c\n2IMGrB+XAgMBAAECggEAAOPiU4e4zxgHr2pgCERDUmB00PrPuxKFxry43YUyCkgo\nboBMNOOQPLWE7niRbD2OXudn3Ep1XmdTYbs8AYQg2YCP1Aqikl6yrswruOzwrIom\nnmMkZODPBzaol/TCakbr5D4ScvFuMivn1YFxjgOVQ0CxBdxDhV50+VrnDZmECOgQ\nejlaAM4CqBeCRtWUp1H7Xr6rZDOkcTlHSWkmM97gqE5Qx1nmBkedOpeaaclOhuX6\nMEjvfUyjJmWdblTwm66leK+MXndHbKbNa0Jq1QOfQc+F22uSc4vhXJTuLPxIy3fV\nHMzNPf/ZO+DVRLrCmbOFTHRBm7r4bbZqayArSjgfoQKBgQDQU/sDt11oGOZuqu4y\nU4tp0OxPb9IyIVLAf+Kgf3OziZTUiq4JS/N+5Exu4pqhDlJaVHUts4WE0PlVr+kd\n21mf/yHlJnz5Rq62bQ/huvyu3XE9ZaIkeZTCtbHohPJ8PW8HU9zyczueIz5b97qx\nBHP/tAL+otvVtZ1Rlq9I4a0vPQKBgQC1CG9PfrCyliAl65DZFX2/beULk1ROzZB8\naecraXc0eA5jUxYEcAJ51/cZDRf885n8DScGfYdXdU2yW4cncfoGRX5QD80TI3JS\nn3P9ccpx8pmCamO3BXlkLJCqqVXfV7+aZakNrWoXFCQX1+VurViPC4TJ0vR7sDtD\n28LRKov3YwKBgFiXviGAcup33FanvhAM0za2sCe/5+WFoklWmSujx7JMCcyxBP3T\nHMOTlqV5HETtcDwVupcqxtcKf13fJwWZaG3P87wdN/xSAK53hs9500cRyLxRYjic\ns5Rx7CxzjSMkhPjawxUfx/SiDDzUBsKMoD/Xb4aV/2LMjxBJQlV+E0YJAoGBAJpC\nCbdPWPmT+ujVBaQ1L+WCmv12GQzdFRUumJDhWXYYJwpzrfsyBqoUYLWz9pDQcpHY\nEzzwkfbwObiVTWFLOaVGag+Gp1R7i9rjjE6WO89EzZHXXgiCXaICZ3NEv6uEdfv2\nTEsfTZtEykyW5yWcCC47vnbLjxAmZxm3lRXujz3JAoGAfnnZ2wYKAsE0W6CxNT4M\nbEzJZsETiN7u8oiFKLvW1yZqLVnxNJWY3aMPYsejiyVZfKm4fx6Vki0spP06zexH\nUv9dwYjD6IrBtft987d3I34J2e6AMlTIzn168pqrtAvFpogcE0mugWlgBktmac7V\nu12zIFNsx+vZRBcUxGqX0ok=\n-----END PRIVATE KEY-----\n",
+  "client_email": "storage-client@image-processing-189813.iam.gserviceaccount.com",
+  "client_id": "111259782229135463065",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
   "token_uri": "https://accounts.google.com/o/oauth2/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/<IAM_USERNAME>%40<PROJECT_ID>.iam.gserviceaccount.com"
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/storage-client%40image-processing-189813.iam.gserviceaccount.com"
 }
