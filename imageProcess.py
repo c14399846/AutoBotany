@@ -13,7 +13,7 @@ import time
 # pip install pyzbar matplotlib numpy
 #
 # Note:
-#	Make sure you start your Anaconda instacne if you installed OpenCV in an Anaconda module
+#	Make sure you start your Anaconda instance if you installed OpenCV in an Anaconda module
 #	[e.g]
 # 
 #		workon cv
@@ -24,22 +24,18 @@ import time
 '''
 
 
-
-clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-
 # Set bool to append / not append images to list
 adddetectedPlant = False
 addlab = False
 addlabBGR = False
 adddetectedFilteredPlant = False
-addorigImgLoc = True
-addfilteredImgLoc = True
-
+addorigImgLoc = False
+addfilteredImgLoc = False
 addedgeLoc = False
 addedgeFilteredLoc = False
 adddoubleEdge = False
-addcontourRes = True
-addcontAnd = True
+addcontourRes = False
+addcontAnd = False
 
 # Set bool to Show all images added to list
 showAll = False
@@ -67,12 +63,16 @@ def convertBGRGray(image):
 	
 	return grayImg
 
+	
+
+# Convert Gray to BGR
 def convertGray2BGR(image):
 
 	bgrImg = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 
 	return bgrImg
 
+	
 
 # Converts BGR to HSV
 def convertBGRHSV(image):
@@ -92,7 +92,7 @@ def convertHSVBGR(image):
 
 
 
-# Threshold of image
+# Get Threshold of image
 def getThreshold(image, lowerTH, upperTH):
 
 	_, thresh = cv2.threshold(image, lowerTH, upperTH, cv2.THRESH_BINARY)
@@ -158,6 +158,8 @@ def splitLAB(image):
 # Applies CLAHE filter to an image
 def applyCLAHE(image):
 
+	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+
 	cl = clahe.apply(image)
 	
 	return cl
@@ -189,14 +191,6 @@ def convertLABBGR(image):
 
 	return bgr
 
-	
-
-	
-# Shows all processed images
-# WORK IN PROGRESS
-def showImages():
-	return
-	
 
 
 # Apply Canny Edge
@@ -313,12 +307,14 @@ def display(im, decodedObjects):
 		# Number of points in the convex hull
 		n = len(hull)
 
-
+		# X and Y positions,
+		# and the distance between X2 and Y2 (width + height)
 		X = hull[0]
 		width = hull[2]
 		Y = hull[1]
 		height = hull[3]
 
+		# Draw lines around the QR Code
 		cv2.line(im, (X,Y), (X + width,Y), (255,0,0), 1) # top line
 		cv2.line(im, (X,Y), (X, Y + height), (255,0,0), 1) # left line
 		cv2.line(im, (X,Y + height), (X + width, Y + height), (255,0,0), 1) # bottom line
@@ -327,8 +323,8 @@ def display(im, decodedObjects):
 	return im
 
 
-# Display the QR Code on the image passed into the function
-# Display barcode and QR code location
+# Get Dimensions of the QR Code in the image
+# Return Width and Height data
 def qrcodeDimensions(decodedObjects):
 
 	X = 0
@@ -398,6 +394,7 @@ def getContoursWrap(plant, edge):
 def removeBackground(contourRes):
 	
 	# HSV background data colour ranges
+	# Used to identify the pixel data
 	
 	# Background / Wall ranges
 	lower_bg  = (20, 70, 200)
@@ -410,6 +407,7 @@ def removeBackground(contourRes):
 	# Support Structure ranges
 	lower_support = (19, 67, 70)
 	upper_support = (30, 252, 253)
+	
 	# END HSV colour ranges
 
 	
@@ -454,40 +452,40 @@ def removeBackground(contourRes):
 	ycbnon = cv2.add(allNonPlantLoc,ycbSupportLoc)
 	
 	
-	grayNon = cv2.cvtColor(ycbnon, cv2.COLOR_BGR2GRAY)
-	ret, blkmask = cv2.threshold(grayNon, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV)
-	blkmask_inv = cv2.bitwise_not(blkmask)
+	grayNon = convertBGRGray(ycbnon)
+	ret, graymask = cv2.threshold(grayNon, thresh = 1, maxval = 255, type = cv2.THRESH_BINARY_INV)
+	#graymask_inv = cv2.bitwise_not(graymask)
 
 	# This is the original retruned value
-	contAnd = cv2.bitwise_and(contourRes, contourRes, mask = blkmask)
+	contour = cv2.bitwise_and(contourRes, contourRes, mask = graymask)
 	
 	
 	# Edge detecton for better contours
-
-	cannyContAnd = applyCanny(contAnd, 30, 200)
+	'''
+	cannyContAnd = applyCanny(contour, 30, 200)
 	
 	# Use blurred image for better edge overlap
-	blur = cv2.GaussianBlur(contAnd.copy(),(5,5),0)
+	blur = cv2.GaussianBlur(contour.copy(),(5,5),0)
 	blurContAnd = applyCanny(blur, 30, 200)
 	
 	
 	edgeHSV1 = cannyContAnd.copy()
 	edgeHSV2 = blurContAnd.copy()
-	shapeFinal = contAnd.shape
+	shapeFinal = contour.shape
 
 	doubleHSVEdge = mergeEdges(edgeHSV1, edgeHSV2, shapeFinal)
 	
 	
 
 	# Displays Contour as a red line over the plant image
-	finalContour = getContoursWrap(contAnd, doubleHSVEdge)
+	finalContour = getContoursWrap(contour, doubleHSVEdge)
 	#cv2.imshow("finalContour", finalContour)
 	
-	contheight, contwidth = contAnd.shape[:2]
+	contheight, contwidth = contour.shape[:2]
 	#print("contheight:" + str(contheight) + "\n")
 	#print("contwidth:" + str(contwidth) + "\n")
-	
-	return contAnd
+	'''
+	return contour
 
 	
 	
@@ -627,13 +625,13 @@ def process(plantOrig):
 	
 	
 	# Finds Contours from Both Edges
-	contourRes = getContours(plantOrig, doubleEdge)
+	contourImage = getContours(plantOrig, doubleEdge)
 	if(addcontourRes):
 		processedImages.append([])
-		processedImages[count].append(contourRes)
-		processedImages[count].append("contourRes")
+		processedImages[count].append(contourImage)
+		processedImages[count].append("contourImage")
 		count += 1
-	#cv2.imshow("contourRes", contourRes)
+	#cv2.imshow("contourImage", contourImage)
 	
 	
 	
@@ -643,13 +641,13 @@ def process(plantOrig):
 	# Normally Machine Learning object detection would be used here, 
 	# but had to manually remove the Background and etc.
 	# Not enough training data to detect a plant over time
-	contAnd = removeBackground(contourRes.copy())
+	contourCleaned = removeBackground(contourImage.copy())
 	if(addcontAnd):
 		processedImages.append([])
-		processedImages[count].append(contAnd)
-		processedImages[count].append("contAnd")
+		processedImages[count].append(contourCleaned)
+		processedImages[count].append("contourCleaned")
 		count += 1
-	#cv2.imshow("contAnd", contAnd)
+	#cv2.imshow("contourCleaned", contourCleaned)
 
 	# QR Code stuff
 	# Used this library to extract QR Code
@@ -663,7 +661,7 @@ def process(plantOrig):
 	plantID = -1;
 	
 
-	contourHeight, contourWidth = contAnd.shape[:2]
+	contourHeight, contourWidth = contourCleaned.shape[:2]
 
 	
 	if decodedObjects is not None and len(decodedObjects) > 0:
@@ -704,12 +702,13 @@ def process(plantOrig):
 		cv2.destroyAllWindows()
 
 
-	return contourRes, contAnd, plantMeasurements, plantID
+	return contourImage, contourCleaned, plantMeasurements, plantID
 
 
 
 
-
+# Main,
+# Accepts two arguments: [filepath, filename]
 def main(filepath, filename):	
 
 	plantImg = None
