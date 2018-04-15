@@ -1,0 +1,4 @@
+use the bucketInput.zip and upload it to Gcloud
+Make sure you have IAM access correctly setup up to use Cloud Functions
+
+** You will need to change the ip address that the cloud functoin will access, to your own servers ip address **
