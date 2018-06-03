@@ -241,6 +241,8 @@ def getContours(plant, edge):
 	#(contours draw on the image supplied, use temp image)
 	baseImg = plant.copy()
 
+	contourLines = plant.copy()
+
 	
 	# Finds contours (Have to be closed edges)
 	(_,contoursEdge,_) = cv2.findContours(edge, mode = cv2.RETR_EXTERNAL, method = cv2.CHAIN_APPROX_NONE)
@@ -263,10 +265,14 @@ def getContours(plant, edge):
 			# Cropping is here (If it works.....)
 			baseImg = baseImg[y:y+h, x:x+w]
 
+			hull = cv2.convexHull(contoursEdge[i])
+			cv2.polylines(contourLines, pts=hull, isClosed=True, color=(0,255,255))
+			img = cv2.drawContours(contourLines, contoursEdge[i], contourIdx=-1, color=(0,0,255), thickness = 1)
+		
+		#cv2.imshow("contourLines", contourLines)
+		#cv2.waitKey()
 		
 	return baseImg
-
-
 
 
 # Find the QR Code in the image
@@ -315,10 +321,10 @@ def display(im, decodedObjects):
 		height = hull[3]
 
 		# Draw lines around the QR Code
-		cv2.line(im, (X,Y), (X + width,Y), (255,0,0), 1) # top line
-		cv2.line(im, (X,Y), (X, Y + height), (255,0,0), 1) # left line
-		cv2.line(im, (X,Y + height), (X + width, Y + height), (255,0,0), 1) # bottom line
-		cv2.line(im, (X + width, Y + height), (X + width, Y), (255,0,0), 1) # right line
+		cv2.line(im, (X,Y), (X + width,Y), (0,0,255), 1) # top line
+		cv2.line(im, (X,Y), (X, Y + height), (0,0,255), 1) # left line
+		cv2.line(im, (X,Y + height), (X + width, Y + height), (0,0,255), 1) # bottom line
+		cv2.line(im, (X + width, Y + height), (X + width, Y), (0,0,255), 1) # right line
 
 	return im
 
@@ -500,6 +506,9 @@ def detectPlant(detPlant):
 	hsv = convertBGRHSV(detPlant)
 	hsvrange = getColourRange(hsv, lower_green, upper_green)
 
+	#cv2.imshow("hsv",hsv)
+	#cv2.imshow("hsvrange",hsvrange)
+
 	return hsvrange
 	
 	
@@ -509,33 +518,35 @@ def process(plantOrig):
 
 	processedImages = [] # Array of processed images
 	count = 0 			 # Integer that holds number of images processed + saved
-	
-	kernelSharp = np.array( [[ 0, -1, 0], [ -1, 5, -1], [ 0, -1, 0]], dtype = float)
-	kernelVerySharp = np.array( [[ -1, -1, -1], [ -1, 9, -1], [ -1, -1, -1]], dtype = float)
 
+	# Convert BGR to Gray
+	#grayCLA = convertBGRGray(plantOrig.copy())
+	#cv2.imshow('grayCLA', grayCLA)
 
-	
-
-	# Using CLAHE contrasting
-	grayCLA = convertBGRGray(plantOrig.copy())
-
+	# Convert to LAB colourspace
 	lab = cv2.cvtColor(plantOrig.copy(), cv2.COLOR_BGR2LAB)
-	planes = cv2.split(lab)
-	planes[0] = applyCLAHE(planes[0])
-	lab = cv2.merge(planes)
+	#cv2.imshow('lab', lab)
+
+	# Split LAB into 3 channels
+	# Needed to apply CLAHE contrast equalisation
+	# Equalise luminance channel
+	channels = cv2.split(lab)
+	luminance = channels[0]
+	channels[0] = applyCLAHE(luminance)
+	lab = cv2.merge(channels)
 	cla = convertLABBGR(lab)
 
 	#cv2.imshow('orig', plantOrig)
 	#cv2.imshow('cla', cla)
 	#cv2.waitKey()
 	
-	plantOrig = cla
-	
+	# Set original plant to equalised image
+	#plantOrig = cla
 	
 	
 	# Converts image to HSV colourspace
 	# Gets colours in a certain range
-	detectedPlant = detectPlant(plantOrig)
+	detectedPlant = detectPlant(cla)
 	
 	if(adddetectedPlant):
 		processedImages.append([])
@@ -560,54 +571,31 @@ def process(plantOrig):
 	# Applies filters to help to blend colours
 	# *Might* make plant extraction easier (for edges / contours)
 	# A bit of a double-edged sword, as some detail is lost
-	bilateral = applyBilateralFilter(plantOrig, 11, 17, 17)
+	bilateral = applyBilateralFilter(cla, 11, 17, 17)
+	#cv2.imshow("bilateral", bilateral)
 
 	# Convert Filtered image to HSV, get colour range for mask
 	detectedFilteredPlant = detectPlant(bilateral)
-	
-	if(adddetectedFilteredPlant):
-		processedImages.append([])
-		processedImages[count].append(detectedFilteredPlant)
-		processedImages[count].append("detectedFilteredPlant")
-		count += 1
 	#cv2.imshow("detectedFilteredPlant", detectedFilteredPlant)
-	
 	
 	# Finds Plant Pixels matching the Filtered Mask
 	filteredImgLoc = getPlantLocation(plantOrig, detectedFilteredPlant)
-	if(addfilteredImgLoc):
-		processedImages.append([])
-		processedImages[count].append(filteredImgLoc)
-		processedImages[count].append("filteredImgLoc")
-		count += 1
 	#cv2.imshow("filteredImgLoc", filteredImgLoc)
 	
 	
+
 	# Merge two images together, tried to do edge detection, not great
 	#mergedPlantAreas = mergeImages(origImgLoc, filteredImgLoc, 0.5, 0.5)
 	
-	
-	
-	
+
+
 	# Gets Canny Edges of Plant Pixels
 	edgeLoc = applyCanny(origImgLoc, 30, 200)
-	if(addedgeLoc):
-		processedImages.append([])
-		processedImages[count].append(edgeLoc)
-		processedImages[count].append("edgeLoc")
-		count += 1
 	#cv2.imshow("edgeLoc", edgeLoc)
-	
 	
 	# Gets Canny Edges of Filtered Plant Pixels
 	edgeFilteredLoc = applyCanny(filteredImgLoc, 30, 200)
-	if(addedgeFilteredLoc):
-		processedImages.append([])
-		processedImages[count].append(edgeFilteredLoc)
-		processedImages[count].append("edgeFilteredLoc")
-		count += 1
-	#cv2.imshow("edgeFilteredLoc", edgeFilteredLoc2)
-	
+	#cv2.imshow("edgeFilteredLoc", edgeFilteredLoc)
 	
 	# Adds the 2 Canny Edges together, better Countour coverage is achieved
 	edgeOriginal = edgeLoc.copy()
@@ -616,11 +604,6 @@ def process(plantOrig):
 	
 	# Merge the two edge images together to create overlap
 	mergedImageEdges = mergeEdges(edgeOriginal, edgeFiltered, imageShape)
-	if(addmergedImageEdges):
-		processedImages.append([])
-		processedImages[count].append(mergedImageEdges)
-		processedImages[count].append("mergedImageEdges")
-		count += 1
 	#cv2.imshow("mergedImageEdges", mergedImageEdges)
 	
 	
@@ -629,14 +612,7 @@ def process(plantOrig):
 	# Finds Contours (Enclosed pixel area) from Both Edges
 	# This is used to help find an ROI, which *should* be the plant
 	contourImage = getContours(plantOrig, mergedImageEdges)
-	if(addcontourRes):
-		processedImages.append([])
-		processedImages[count].append(contourImage)
-		processedImages[count].append("contourImage")
-		count += 1
 	#cv2.imshow("contourImage", contourImage)
-	
-	
 	
 	# Extracts Background, Support structures, and Dirt pixels
 	# from the contour image
@@ -645,12 +621,10 @@ def process(plantOrig):
 	# but had to manually remove the Background and etc.
 	# Not enough training data to detect a plant over time
 	contourCleaned = removeBackground(contourImage.copy())
-	if(addcontAnd):
-		processedImages.append([])
-		processedImages[count].append(contourCleaned)
-		processedImages[count].append("contourCleaned")
-		count += 1
 	#cv2.imshow("contourCleaned", contourCleaned)
+
+
+
 
 	# QR Code stuff
 	# Used this library to extract QR Code
@@ -663,14 +637,12 @@ def process(plantOrig):
 	
 	plantID = -1;
 	
-
 	contourHeight, contourWidth = contourCleaned.shape[:2]
-
 	
 	if decodedObjects is not None and len(decodedObjects) > 0:
 	
 		# Display QR Code location on the plant image
-		#disp = display(plantOrig.copy(), decodedObjects)
+		disp = display(plantOrig.copy(), decodedObjects)
 		#cv2.imshow('disp', disp)
 
 		qrX, qrY = qrcodeDimensions(decodedObjects)
@@ -701,9 +673,11 @@ def process(plantOrig):
 		for i in range(count):
 			cv2.imshow(processedImages[i][1], processedImages[i][0])
 	
-		cv2.waitKey(0)
-		cv2.destroyAllWindows()
+		#cv2.waitKey(0)
+		#cv2.destroyAllWindows()
 
+	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
 
 	return contourImage, contourCleaned, plantMeasurements, plantID
 

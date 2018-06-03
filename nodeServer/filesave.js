@@ -15,6 +15,7 @@ var formidable = require('formidable');
 var fs = require('fs');
 var ps = require('python-shell');
 var gcloud = require('google-cloud');
+const ChartjsNode = require('chartjs-node');
 
 
 // Image and Python file data
@@ -242,7 +243,6 @@ http.createServer(function (req, res) {
 	   		
 	   		var local_path = '../images/';
 
-			
 	   		var local_imgfile = local_path + fields.filename;
 
 	   		ifile.createReadStream()
@@ -262,7 +262,9 @@ http.createServer(function (req, res) {
 					// Python Code
 	   				processImage();
 
-					res.write('File uploaded!');
+	   				res.writeHead(200, {Location:'http://35.189.222.193:3000/'});
+					//res.status(200).redirect('http://35.189.222.193:3000/');
+					//res.write('File uploaded!');
 					res.end();
 	   			});
 	   	}
@@ -275,22 +277,34 @@ http.createServer(function (req, res) {
 
 			var oldPath = files.filetoupload.path;
 			
+			/*if (!oldPath){
+	   			res.status(400).redirect('http://35.189.222.193:3000/');
+	   		}*/
+
 			var newPath = '../images/';
 			
 			var filePath = newPath + files.filetoupload.name;
 
+			// Save uploaded image to disk
 			fs.rename(oldPath, filePath, function (err) {
 
-				if (err) throw err;
+				if (err) {
+					console.log(err);
+					res.writeHead(301, {Location:'http://35.189.222.193:3000/'});
+					res.end();
+					//res.status(400).redirect('http://35.189.222.193:3000/');
+				} 
 
-				// Upload file to Input Bucket
+				// Upload file to file Input Bucket
 				inputBucket
 					.upload(filePath)
 					.then( () => {
 						console.log(`Uploaded input file ${filePath} to ${inBucketName}`);
 					});
 				
-				res.write('File uploaded!');
+				res.writeHead(200, {Location:'http://35.189.222.193:3000/'});
+				//res.status(200).redirect('http://35.189.222.193:3000/');
+				//res.write('File uploaded!');
 				res.end();
 	 			
 			});
@@ -299,17 +313,189 @@ http.createServer(function (req, res) {
 
   imageExists = true;
 
-  } else {
-	  
+  } 
+
+
+  else if (req.url == '/graph') {
+
+	pg.connect(conString, (err, client, done) => {
+
+    	if(err){
+    		console.log(err);
+    		done();
+    	}
+
+    	console.log("Graphing: Connected to DB");
+		
+    	let firstday = 6;
+		let lastday = -1;
+
+		const results = [];
+
+		try {
+			const query = client.query("SELECT inputimg, ROUND(width,2) AS \"Width\", ROUND(height,2) AS \"Height\" FROM plants WHERE inputimg like 'day%' ");
+
+			query.on('row', (row) => {
+				results.push(row);
+			});
+
+			query.on('end', () => {
+				done();
+				const jsonStrArr = JSON.stringify(results, null, 1);
+
+				var chartNode = new ChartjsNode(600, 600);
+
+				var labelsArr = [];
+				var wArr = [];
+				var hArr = [];
+
+				var jsonObjArray = JSON.parse(jsonStrArr);
+
+				for (var i = 0; i < jsonObjArray.length; i++) {
+
+					var str = jsonObjArray[i].inputimg;
+
+					labelsArr.push(str.substring(0, str.length - 4));
+					wArr.push(jsonObjArray[i].Width);
+					hArr.push(jsonObjArray[i].Height);
+				}
+
+
+				var chartData = {
+					labels: labelsArr,
+					datasets: [{
+							data: wArr,
+							label: "Width",
+							//backgroundColor: "rgba(153,255,51,0.4)",
+							//borderColor: "#3e95cd",
+							backgroundColor: "rgba(179,11,198,.2)",
+  							borderColor: "rgba(179,11,198,1)",
+							fill: false
+						}, {
+							data: hArr,
+							label: "Heigth",
+							//backgroundColor: "rgba(255,153,0,0.4)",
+							//borderColor: "#8e5ea2",
+							backgroundColor: "rgba(255,153,0,0.4)",
+     						borderColor: "rgba(255,153,0,1)",
+							fill: false
+						}
+					 ]
+				};
+
+				var chartOptions = {
+					legend: {
+						labels: {
+							fontColor: '#ffffff'
+							//fontColor: '#000'
+						}
+					},
+					title: {
+						display: true,
+						text: 'Image Width and Height'
+					},
+					scales: {
+					    yAxes: [{
+					      scaleLabel: {
+					        display: true,
+					        labelString: 'CentiMetre'
+					      }
+					    }],
+					    xAxes: [{
+					      scaleLabel: {
+					        display: true,
+					        labelString: 'DAYS'
+					      }
+					    }],
+					  }
+				};
+
+				var chartJsOptions = {
+				    type: 'line',
+				    data: chartData,
+				    options: chartOptions
+				};
+
+				
+				return chartNode.drawChart(chartJsOptions)
+				.then(() => {
+				    // chart is created
+				 
+				    // get image as png buffer
+				    return chartNode.getImageBuffer('image/png');
+				})
+				.then(buffer => {
+				    Array.isArray(buffer) // => true
+				    // as a stream
+				    return chartNode.getImageStream('image/png');
+				})
+				.then(streamResult => {
+				    // using the length property you can do things like
+				    // directly upload the image to s3 by using the
+				    // stream and length properties
+				    streamResult.stream // => Stream object
+				    streamResult.length // => Integer length of stream
+				    // write to a file
+				    return chartNode.writeImageToFile('image/png', './testimage.png');
+				})
+				.then(() => {
+					console.log("testChart file");
+				    // chart is now written to the file path
+				    // ./testimage.png
+
+
+				    var fileToLoad = fs.readFileSync('./testimage.png');
+				    res.writeHead(200, {'Content-Type': 'image/png'});
+				    res.write(fileToLoad);
+				    //res.write('<body>');
+				    //res.write('<img src="./testimage.png" alt="Growth Over Days" width="1280" height="720">');
+					//res.write('</body>');
+				    return res.end();
+
+
+				    // Returns JSON string array of width + height data
+				    //res.write(jsonStrArr);
+					//res.end();
+				});
+
+				// Returns JSON string array of width + height data
+				//res.write(jsonStrArr);
+				//res.end();
+			});
+
+		} catch (error){
+			console.log(error);
+		}
+
+	});
 	// HTML Form for browser access
 	
-    res.writeHead(200, {'Content-Type': 'text/html'});
+    /*res.writeHead(200, {'Content-Type': 'text/html'});
     res.write('<center>');
     res.write('<form action="fileupload" method="post" enctype="multipart/form-data">');
     res.write('<input type="file" name="filetoupload" accept="image/png, image/jpg. image/jpeg, image/bmp"><br>');
     res.write('<input type="submit">');
     res.write('</form>');
 	res.write('</center>');
+    return res.end();*/
+  }
+
+  else {
+	  
+	// HTML Form for browser access
+    var htmlFile = fs.readFileSync('./pages/home.html', {encoding: "utf8"});
+    res.writeHead(200, {'Content-Type': 'text/html'});
+    res.write(htmlFile);
+
+
+    /*
+    res.write('<center>');
+    res.write('<form action="fileupload" method="post" enctype="multipart/form-data">');
+    res.write('<input type="file" name="filetoupload" accept="image/png, image/jpg. image/jpeg, image/bmp"><br>');
+    res.write('<input type="submit">');
+    res.write('</form>');
+	res.write('</center>');
+	*/
     return res.end();
   }
-}).listen(3000); 
+}).listen(3000);
